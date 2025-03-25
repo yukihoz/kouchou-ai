@@ -54,6 +54,7 @@ def hierarchical_merge_labelling(config: dict) -> None:
     dataset = config["output_dir"]
     merge_path = f"outputs/{dataset}/hierarchical_merge_labels.csv"
     clusters_df = pd.read_csv(f"outputs/{dataset}/hierarchical_initial_labels.csv")
+    breakpoint()
     cluster_id_columns: list[str] = _filter_id_columns(clusters_df.columns)
     # ボトムクラスタのラベル・説明とクラスタid付きの各argumentを入力し、各階層のクラスタラベル・説明を生成し、argumentに付けたdfを作成
     merge_result_df = merge_labelling(
@@ -67,6 +68,7 @@ def hierarchical_merge_labelling(config: dict) -> None:
     parent_child_df = _build_parent_child_mapping(merge_result_df, cluster_id_columns)
     melted_df = melted_df.merge(parent_child_df, on=["level", "id"], how="left")
     density_df = calculate_cluster_density(melted_df, config)
+    breakpoint()
     density_df.to_csv(merge_path, index=False)
 
 

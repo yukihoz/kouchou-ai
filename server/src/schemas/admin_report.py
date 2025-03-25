@@ -27,3 +27,4 @@ class ReportInput(SchemaBaseModel):
     workers: int  # LLM APIの並列実行数
     prompt: Prompt  # プロンプト
     comments: list[Comment]  # コメントのリスト
+    is_pubcom: bool = False # パブコメモード出力フラグ

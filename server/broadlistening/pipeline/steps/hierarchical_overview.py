@@ -10,7 +10,7 @@ def hierarchical_overview(config):
     path = f"outputs/{dataset}/hierarchical_overview.txt"
 
     hierarchical_label_df = pd.read_csv(f"outputs/{dataset}/hierarchical_merge_labels.csv")
-
+    breakpoint()
     prompt = config["hierarchical_overview"]["prompt"]
     model = config["hierarchical_overview"]["model"]
 
@@ -28,6 +28,7 @@ def hierarchical_overview(config):
         input += descriptions[i] + "\n\n"
 
     messages = [{"role": "user", "content": prompt}, {"role": "user", "content": input}]
+    breakpoint()
     response = request_to_chat_openai(messages=messages, model=model)
 
     with open(path, "w") as file:

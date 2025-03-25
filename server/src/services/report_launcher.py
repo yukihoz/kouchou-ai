@@ -18,6 +18,7 @@ def _build_config(report_input: ReportInput) -> dict:
         "question": report_input.question,
         "intro": report_input.intro,
         "model": report_input.model,
+        "is_pubcom": report_input.is_pubcom,
         "extraction": {
             "prompt": report_input.prompt.extraction,
             "workers": report_input.workers,

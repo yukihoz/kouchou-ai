@@ -61,6 +61,7 @@ def extraction(config):
     classification_categories = config["extraction"]["categories"]
     if classification_categories:
         results = classify_args(results, config, workers)
+    breakpoint()
     results.to_csv(path, index=False)
 
 

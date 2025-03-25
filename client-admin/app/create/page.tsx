@@ -25,6 +25,10 @@ import { extractionPrompt } from './extractionPrompt'
 import { initialLabellingPrompt } from '@/app/create/initialLabellingPrompt'
 import { mergeLabellingPrompt } from '@/app/create/mergeLabellingPrompt'
 import { overviewPrompt } from '@/app/create/overviewPrompt'
+import { extractionPrompt as pubcomExtraction } from './pubcom/extractionPrompt'
+import { initialLabellingPrompt as pubcomInitialLabelling } from './pubcom/initialLabellingPrompt'
+import { mergeLabellingPrompt as pubcomMergeLabelling } from './pubcom/mergeLabellingPrompt'
+import { overviewPrompt as pubcomOverview } from './pubcom/overviewPrompt'
 import { ChevronRightIcon, DownloadIcon } from 'lucide-react'
 import { v4 } from 'uuid'
 
@@ -44,6 +48,7 @@ export default function Page() {
   const [initialLabelling, setInitialLabelling] = useState<string>(initialLabellingPrompt)
   const [mergeLabelling, setMergeLabelling] = useState<string>(mergeLabellingPrompt)
   const [overview, setOverview] = useState<string>(overviewPrompt)
+  const [isPubcomMode, setIsPubcomMode] = useState(false)
 
   async function onSubmit() {
     setLoading(true)
@@ -91,6 +96,25 @@ export default function Page() {
       return
     }
     try {
+      const payload = {
+        input,
+        question,
+        intro,
+        comments,
+        cluster: [clusterLv1, clusterLv2],
+        model,
+        workers,
+        prompt: {
+          extraction,
+          initialLabelling,
+          mergeLabelling,
+          overview
+        },
+        is_pubcom: isPubcomMode
+      }
+    
+      console.log('送信されるJSON:', payload)
+
       const response = await fetch(process.env.NEXT_PUBLIC_API_BASEPATH + '/admin/reports', {
         method: 'POST',
         headers: {
@@ -110,7 +134,8 @@ export default function Page() {
             initialLabelling,
             mergeLabelling,
             overview
-          }
+          },
+          is_pubcom: isPubcomMode
         })
       })
       if (!response.ok) {
@@ -203,6 +228,29 @@ export default function Page() {
           <HStack justify={'flex-end'} w={'full'}>
             <Button onClick={onToggle} variant={'outline'} w={'200px'}>
               AI詳細設定 (オプション)
+            </Button>
+          </HStack>
+          <HStack justify={'flex-end'} w={'full'}>
+            <Button
+              variant={isPubcomMode ? 'solid' : 'outline'}
+              colorScheme="teal"
+              w={'200px'}
+              onClick={() => {
+                setIsPubcomMode(!isPubcomMode)
+                if (!isPubcomMode) {
+                  setExtraction(pubcomExtraction)
+                  setInitialLabelling(pubcomInitialLabelling)
+                  setMergeLabelling(pubcomMergeLabelling)
+                  setOverview(pubcomOverview)
+                } else {
+                  setExtraction(extractionPrompt)
+                  setInitialLabelling(initialLabellingPrompt)
+                  setMergeLabelling(mergeLabellingPrompt)
+                  setOverview(overviewPrompt)
+                }
+              }}
+            >
+              パブコメモード {isPubcomMode ? '✓' : ''}
             </Button>
           </HStack>
           <Presence present={open} w={'full'}>

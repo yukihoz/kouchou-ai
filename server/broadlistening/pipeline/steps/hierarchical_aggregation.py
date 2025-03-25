@@ -49,6 +49,7 @@ def hierarchical_aggregation(config):
     comments = pd.read_csv(f"inputs/{config['input']}.csv")
     clusters = pd.read_csv(f"outputs/{config['output_dir']}/hierarchical_clusters.csv")
     labels = pd.read_csv(f"outputs/{config['output_dir']}/hierarchical_merge_labels.csv")
+    breakpoint()
     hidden_properties_map: dict[str, list[str]] = config["hierarchical_aggregation"]["hidden_properties"]
 
     results["arguments"] = _build_arguments(clusters)
@@ -66,7 +67,7 @@ def hierarchical_aggregation(config):
     print("overview")
     print(overview)
     results["overview"] = overview
-
+    breakpoint()
     with open(path, "w") as file:
         json.dump(results, file, indent=2, ensure_ascii=False)
 

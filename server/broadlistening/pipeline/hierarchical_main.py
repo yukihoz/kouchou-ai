@@ -65,7 +65,8 @@ def main():
         run_step("hierarchical_merge_labelling", hierarchical_merge_labelling, config)
         run_step("hierarchical_overview", hierarchical_overview, config)
         run_step("hierarchical_aggregation", hierarchical_aggregation, config)
-        run_step("hierarchical_visualization", hierarchical_visualization, config)
+        if not args.is_pubcom:
+            run_step("hierarchical_visualization", hierarchical_visualization, config)
 
         termination(config)
     except Exception as e:
