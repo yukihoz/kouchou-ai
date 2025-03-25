@@ -12,7 +12,7 @@ slogger = setup_logger()
 
 
 def parse_spreadsheet_url(url: str) -> tuple[str, str | None]:
-    # スプレッドシートIDのパターン
+        # スプレッドシートIDのパターン
     pattern = r"/spreadsheets/d/([a-zA-Z0-9-_]+)"
     match = re.search(pattern, url)
     
@@ -30,7 +30,7 @@ def parse_spreadsheet_url(url: str) -> tuple[str, str | None]:
 
 
 def fetch_public_spreadsheet(sheet_id: str, sheet_name: str | None = None) -> pd.DataFrame:
-    # 公開スプレッドシートのCSVエクスポートURL
+        # 公開スプレッドシートのCSVエクスポートURL
     base_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export"
     
     params = {

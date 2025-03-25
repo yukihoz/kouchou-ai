@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Security
@@ -42,7 +42,7 @@ class SpreadsheetInput(BaseModel):
 @router.post("/admin/spreadsheet/import")
 async def import_spreadsheet(
     input_data: SpreadsheetInput, api_key: str = Depends(verify_admin_api_key)
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     スプレッドシートをインポートするエンドポイント
 
@@ -51,7 +51,7 @@ async def import_spreadsheet(
         api_key: APIキー
 
     Returns:
-        Dict[str, str]: インポート結果
+        dict[str, str]: インポート結果
 
     Raises:
         HTTPException: インポート処理中にエラーが発生した場合
@@ -75,7 +75,7 @@ async def import_spreadsheet(
 @router.get("/admin/spreadsheet/data/{file_name}")
 async def get_spreadsheet_data(
     file_name: str, api_key: str = Depends(verify_admin_api_key)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     インポート済みのスプレッドシートデータを取得するエンドポイント
 
@@ -84,7 +84,7 @@ async def get_spreadsheet_data(
         api_key: APIキー
 
     Returns:
-        Dict[str, Any]: スプレッドシートのデータ
+        dict[str, Any]: スプレッドシートのデータ
 
     Raises:
         HTTPException: データ取得中にエラーが発生した場合
@@ -97,9 +97,9 @@ async def get_spreadsheet_data(
         df = pd.read_csv(input_path)
         
         # コメントデータをJSON形式に変換
-        comments: List[Dict[str, Optional[str]]] = []
+        comments: list[dict[str, str | None]] = []
         for _, row in df.iterrows():
-            comment: Dict[str, Optional[str]] = {
+            comment: dict[str, str | None] = {
                 "id": row.get("comment-id", f"id-{len(comments)+1}"),
                 "comment": row.get("comment-body", row.get("comment", "")),
             }

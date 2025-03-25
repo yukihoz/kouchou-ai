@@ -2,6 +2,7 @@ import json
 import subprocess
 import threading
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from src.config import settings
@@ -9,7 +10,7 @@ from src.schemas.admin_report import ReportInput
 from src.services.report_status import add_new_report_to_status, set_status
 
 
-def _build_config(report_input: ReportInput) -> dict:
+def _build_config(report_input: ReportInput) -> dict[str, Any]:
     comment_num = len(report_input.comments)
 
     config = {
@@ -52,7 +53,16 @@ def save_config_file(report_input: ReportInput) -> Path:
     return config_path
 
 
-def save_input_file(report_input: ReportInput):
+def save_input_file(report_input: ReportInput) -> Path:
+    """
+    入力データをCSVファイルとして保存する
+
+    Args:
+        report_input: レポート生成の入力データ
+
+    Returns:
+        Path: 保存されたCSVファイルのパス
+    """
     comments = [
         {
             "comment-id": comment.id,
@@ -65,9 +75,16 @@ def save_input_file(report_input: ReportInput):
     input_path = settings.INPUT_DIR / f"{report_input.input}.csv"
     df = pd.DataFrame(comments)
     df.to_csv(input_path, index=False)
+    return input_path
 
+def _monitor_process(process: subprocess.Popen, slug: str) -> None:
+    """
+    サブプロセスの実行を監視し、完了時にステータスを更新する
 
-def _monitor_process(process: subprocess.Popen, slug: str):
+    Args:
+        process: 監視対象のサブプロセス
+        slug: レポートのスラッグ
+    """
     retcode = process.wait()
     if retcode == 0:
         set_status(slug, "ready")
@@ -75,11 +92,10 @@ def _monitor_process(process: subprocess.Popen, slug: str):
         set_status(slug, "error")
 
 
-def launch_report_generation(report_input: ReportInput) -> str:
+def launch_report_generation(report_input: ReportInput) -> None:
     """
-    外部ツールの main.py を subprocess で呼び出してレポート生成処理を開始する関数。
+外部ツールの main.py を subprocess で呼び出してレポート生成処理を開始する関数。
     """
-
     try:
         add_new_report_to_status(report_input)
         config_path = save_config_file(report_input)
