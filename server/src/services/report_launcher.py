@@ -77,6 +77,7 @@ def save_input_file(report_input: ReportInput) -> Path:
     df.to_csv(input_path, index=False)
     return input_path
 
+
 def _monitor_process(process: subprocess.Popen, slug: str) -> None:
     """
     サブプロセスの実行を監視し、完了時にステータスを更新する
@@ -94,7 +95,7 @@ def _monitor_process(process: subprocess.Popen, slug: str) -> None:
 
 def launch_report_generation(report_input: ReportInput) -> None:
     """
-外部ツールの main.py を subprocess で呼び出してレポート生成処理を開始する関数。
+    外部ツールの main.py を subprocess で呼び出してレポート生成処理を開始する関数。
     """
     try:
         add_new_report_to_status(report_input)

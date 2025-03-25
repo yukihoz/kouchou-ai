@@ -61,7 +61,7 @@ async def import_spreadsheet(
             "status": "success",
             "message": "スプレッドシートのインポートが完了しました",
             "file_path": str(file_path),
-            "file_name": input_data.file_name
+            "file_name": input_data.file_name,
         }
     except ValueError as e:
         slogger.error(f"スプレッドシートのインポートエラー: {e}")
@@ -72,9 +72,7 @@ async def import_spreadsheet(
 
 
 @router.get("/admin/spreadsheet/data/{file_name}")
-async def get_spreadsheet_data(
-    file_name: str, api_key: str = Depends(verify_admin_api_key)
-) -> dict[str, Any]:
+async def get_spreadsheet_data(file_name: str, api_key: str = Depends(verify_admin_api_key)) -> dict[str, Any]:
     """
     インポート済みのスプレッドシートデータを取得するエンドポイント
 
@@ -92,31 +90,26 @@ async def get_spreadsheet_data(
     try:
         if not os.path.exists(input_path):
             raise HTTPException(status_code=404, detail=f"ファイル {file_name}.csv が見つかりません")
-        
+
         df = pd.read_csv(input_path)
-        
+
         # コメントデータをJSON形式に変換
         comments: list[dict[str, str | None]] = []
         for _, row in df.iterrows():
             comment: dict[str, str | None] = {
-                "id": row.get("comment-id", f"id-{len(comments)+1}"),
+                "id": row.get("comment-id", f"id-{len(comments) + 1}"),
                 "comment": row.get("comment-body", row.get("comment", "")),
             }
-            
+
             # オプションフィールドを追加
             if "source" in df.columns:
                 comment["source"] = row.get("source")
             if "url" in df.columns:
                 comment["url"] = row.get("url")
-                
+
             comments.append(comment)
-            
-        return {
-            "status": "success",
-            "file_name": file_name,
-            "comments": comments,
-            "total": len(comments)
-        }
+
+        return {"status": "success", "file_name": file_name, "comments": comments, "total": len(comments)}
     except HTTPException:
         raise
     except Exception as e:
