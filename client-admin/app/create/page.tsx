@@ -30,6 +30,13 @@ import { overviewPrompt } from '@/app/create/overviewPrompt'
 import { ChevronRightIcon, DownloadIcon } from 'lucide-react'
 import { v4 } from 'uuid'
 
+interface SpreadsheetComment {
+  id?: string
+  comment: string
+  source?: string | null
+  url?: string | null
+}
+
 export default function Page() {
   const router = useRouter()
   const { open, onToggle } = useDisclosure()
@@ -42,7 +49,7 @@ export default function Page() {
   const [spreadsheetUrl, setSpreadsheetUrl] = useState<string>('')
   const [spreadsheetImported, setSpreadsheetImported] = useState<boolean>(false)
   const [spreadsheetLoading, setSpreadsheetLoading] = useState<boolean>(false)
-  const [spreadsheetData, setSpreadsheetData] = useState<any[]>([])
+  const [spreadsheetData, setSpreadsheetData] = useState<SpreadsheetComment[]>([])
   const [model, setModel] = useState<string>('gpt-4o-mini')
   const [clusterLv1, setClusterLv1] = useState<number>(5)
   const [clusterLv2, setClusterLv2] = useState<number>(50)
@@ -81,21 +88,21 @@ export default function Page() {
         throw new Error(errorData.detail || '不明なエラーが発生しました')
       }
 
-      const result = await response.json()
+      await response.json()
 
       // スプレッドシートのデータを取得
       const commentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/spreadsheet/data/${input}`, {
         headers: {
           'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
         },
-      });
+      })
 
       if (!commentResponse.ok) {
-        throw new Error('スプレッドシートデータの取得に失敗しました');
+        throw new Error('スプレッドシートデータの取得に失敗しました')
       }
 
-      const commentData = await commentResponse.json();
-      setSpreadsheetData(commentData.comments);
+      const commentData = await commentResponse.json()
+      setSpreadsheetData(commentData.comments)
 
       toaster.create({
         type: 'success',
@@ -135,7 +142,6 @@ export default function Page() {
 
     if (!commonCheck || !sourceCheck) {
       toaster.create({
-        // placement: 'bottom',
         type: 'error',
         title: '入力エラー',
         description: '全ての項目が入力されているか確認してください',
@@ -170,8 +176,10 @@ export default function Page() {
         }
       } else if (inputType === 'spreadsheet' && spreadsheetImported) {
         comments = spreadsheetData.map((item, index) => ({
-          id: `spreadsheet-${index + 1}`,
-          comment: item.comment
+          id: item.id || `spreadsheet-${index + 1}`,
+          comment: item.comment,
+          source: item.source || null,
+          url: item.url || null
         }))
       }
       const response = await fetch(process.env.NEXT_PUBLIC_API_BASEPATH + '/admin/reports', {
@@ -221,8 +229,9 @@ export default function Page() {
   }
 
   const handleTabValueChange = (details: { value: string }) => {
-    setInputType(details.value as 'file' | 'spreadsheet');
-  };
+    setInputType(details.value as 'file' | 'spreadsheet')
+  }
+
   return (
     <div className={'container'}>
       <Header />
@@ -265,7 +274,7 @@ export default function Page() {
               <Box p={4}>
                 <Tabs.Content value="file">
                   <VStack alignItems="stretch" w="full">
-                  <Link href="/sample_comments.csv"
+                    <Link href="/sample_comments.csv"
                       download
                       style={{
                         display: 'inline-flex',
@@ -302,12 +311,12 @@ export default function Page() {
                 </Tabs.Content>
 
                 <Tabs.Content value="spreadsheet">
-                  <VStack alignItems="stretch" w="full" spacing={4}>
+                  <VStack alignItems="stretch" w="full" gap={4}>
                     <Field.Root>
                       <Field.Label>スプレッドシートURL</Field.Label>
-                      <HStack w="full" flexDir={["column", "column", "row"]}
-                        alignItems={["stretch", "stretch", "center"]} 
-                        spacing={[2, 2, 4]}
+                      <HStack w="full" flexDir={['column', 'column', 'row']}
+                        alignItems={['stretch', 'stretch', 'center']} 
+                        gap={[2, 2, 4]}
                       >
                         <Input
                           flex="1"
@@ -317,10 +326,10 @@ export default function Page() {
                         />
                         <Button
                           onClick={importSpreadsheet}
-                          isLoading={spreadsheetLoading}
-                          isDisabled={spreadsheetImported}
+                          loading={spreadsheetLoading}
+                          disabled={spreadsheetImported}
                           whiteSpace="nowrap"
-                          width={["full", "full", "auto"]}
+                          width={['full', 'full', 'auto']}
                         >
                           {spreadsheetImported ? '取得済み' : 'データを取得'}
                         </Button>
