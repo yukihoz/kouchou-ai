@@ -1,8 +1,11 @@
+import os
+from typing import Dict, List, Any, Optional
+
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
-import pandas as pd
-import os
+
 from src.config import settings
 from src.services.spreadsheet_service import process_spreadsheet_url
 from src.utils.logger import setup_logger
@@ -13,7 +16,19 @@ router = APIRouter()
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 
 
-async def verify_admin_api_key(api_key: str = Security(api_key_header)):
+async def verify_admin_api_key(api_key: str = Security(api_key_header)) -> str:
+    """
+    管理者APIキーを検証する関数
+
+    Args:
+        api_key: リクエストヘッダーから取得したAPIキー
+
+    Returns:
+        str: 検証されたAPIキー
+
+    Raises:
+        HTTPException: APIキーが無効な場合
+    """
     if not api_key or api_key != settings.ADMIN_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return api_key
@@ -27,7 +42,20 @@ class SpreadsheetInput(BaseModel):
 @router.post("/admin/spreadsheet/import")
 async def import_spreadsheet(
     input_data: SpreadsheetInput, api_key: str = Depends(verify_admin_api_key)
-):
+) -> Dict[str, str]:
+    """
+    スプレッドシートをインポートするエンドポイント
+
+    Args:
+        input_data: インポートするスプレッドシートの情報
+        api_key: APIキー
+
+    Returns:
+        Dict[str, str]: インポート結果
+
+    Raises:
+        HTTPException: インポート処理中にエラーが発生した場合
+    """
     try:
         file_path = process_spreadsheet_url(input_data.url, input_data.file_name)
         return {
@@ -38,18 +66,28 @@ async def import_spreadsheet(
         }
     except ValueError as e:
         slogger.error(f"スプレッドシートのインポートエラー: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         slogger.error(f"予期せぬエラー: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"内部サーバーエラー: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"内部サーバーエラー: {str(e)}") from e
 
 
 @router.get("/admin/spreadsheet/data/{file_name}")
 async def get_spreadsheet_data(
     file_name: str, api_key: str = Depends(verify_admin_api_key)
-):
+) -> Dict[str, Any]:
     """
     インポート済みのスプレッドシートデータを取得するエンドポイント
+
+    Args:
+        file_name: 取得するファイル名
+        api_key: APIキー
+
+    Returns:
+        Dict[str, Any]: スプレッドシートのデータ
+
+    Raises:
+        HTTPException: データ取得中にエラーが発生した場合
     """
     input_path = settings.INPUT_DIR / f"{file_name}.csv"
     try:
@@ -59,9 +97,9 @@ async def get_spreadsheet_data(
         df = pd.read_csv(input_path)
         
         # コメントデータをJSON形式に変換
-        comments = []
+        comments: List[Dict[str, Optional[str]]] = []
         for _, row in df.iterrows():
-            comment = {
+            comment: Dict[str, Optional[str]] = {
                 "id": row.get("comment-id", f"id-{len(comments)+1}"),
                 "comment": row.get("comment-body", row.get("comment", "")),
             }
@@ -84,4 +122,4 @@ async def get_spreadsheet_data(
         raise
     except Exception as e:
         slogger.error(f"スプレッドシートデータの取得エラー: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"データ取得中にエラーが発生しました: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"データ取得中にエラーが発生しました: {str(e)}") from e

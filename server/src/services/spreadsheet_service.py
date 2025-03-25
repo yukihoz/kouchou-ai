@@ -1,16 +1,17 @@
 import re
-import pandas as pd
-import requests
 from io import StringIO
 from pathlib import Path
-from typing import Tuple, Optional
+
+import pandas as pd
+import requests
+
 from src.config import settings
 from src.utils.logger import setup_logger
 
 slogger = setup_logger()
 
 
-def parse_spreadsheet_url(url: str) -> Tuple[str, Optional[str]]:
+def parse_spreadsheet_url(url: str) -> tuple[str, str | None]:
     # スプレッドシートIDのパターン
     pattern = r"/spreadsheets/d/([a-zA-Z0-9-_]+)"
     match = re.search(pattern, url)
@@ -28,7 +29,7 @@ def parse_spreadsheet_url(url: str) -> Tuple[str, Optional[str]]:
     return sheet_id, sheet_name
 
 
-def fetch_public_spreadsheet(sheet_id: str, sheet_name: Optional[str] = None) -> pd.DataFrame:
+def fetch_public_spreadsheet(sheet_id: str, sheet_name: str | None = None) -> pd.DataFrame:
     # 公開スプレッドシートのCSVエクスポートURL
     base_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export"
     
@@ -64,7 +65,7 @@ def fetch_public_spreadsheet(sheet_id: str, sheet_name: Optional[str] = None) ->
         
     except requests.exceptions.RequestException as e:
         slogger.error(f"スプレッドシートの取得エラー: {e}")
-        raise ValueError(f"スプレッドシートの取得に失敗しました: {e}")
+        raise ValueError(f"スプレッドシートの取得に失敗しました: {e}") from e
 
 
 def save_as_csv(df: pd.DataFrame, file_name: str) -> Path:
@@ -81,11 +82,11 @@ def process_spreadsheet_url(url: str, file_name: str) -> Path:
         return save_as_csv(df, file_name)
     except Exception as e:
         slogger.error(f"スプレッドシートURL処理エラー: {e}")
-        raise ValueError(f"スプレッドシートの処理に失敗しました: {e}")
+        raise ValueError(f"スプレッドシートの処理に失敗しました: {e}") from e
 
 
 # 将来的に認証対応が必要になった場合の拡張ポイント
-# def fetch_private_spreadsheet(sheet_id: str, sheet_name: Optional[str] = None, credentials=None) -> pd.DataFrame:
+# def fetch_private_spreadsheet(sheet_id: str, sheet_name: str | None = None, credentials=None) -> pd.DataFrame:
 #     """
 #     アクセス制限されているスプレッドシートからデータを取得する機能
 #     """
