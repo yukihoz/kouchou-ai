@@ -1,7 +1,12 @@
 import Papa from 'papaparse'
 import {v4} from 'uuid'
 
-type CsvData = Record<string, unknown>
+export interface CsvData {
+  id: string;
+  comment: string;
+  source?: string | null;
+  url?: string | null;
+}
 
 export async function parseCsv(csvFile: File): Promise<CsvData[]> {
   return new Promise((resolve, reject) => {

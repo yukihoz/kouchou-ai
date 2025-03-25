@@ -20,7 +20,7 @@ import {
 import { FileUploadDropzone, FileUploadList, FileUploadRoot } from '@/components/ui/file-upload'
 import { useState } from 'react'
 import { StepperInput } from '@/components/ui/stepper-input'
-import { parseCsv } from '@/app/create/parseCsv'
+import { parseCsv, CsvData } from '@/app/create/parseCsv'
 import { useRouter } from 'next/navigation'
 import { toaster } from '@/components/ui/toaster'
 import { extractionPrompt } from './extractionPrompt'
@@ -149,7 +149,7 @@ export default function Page() {
       setLoading(false)
       return
     }
-    let comments = []
+    let comments: CsvData[] = []
     try {
       if (inputType === 'file' && csv) {
         try {
