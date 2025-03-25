@@ -10,10 +10,11 @@ This script:
 5. Updates ./server/data/report_status.json with the appropriate information
 
 Usage:
-    python fetch_reports.py [--test]
+    python fetch_reports.py [--test] [--api-url URL]
 
 Options:
-    --test    Run in test mode with mock data
+    --test       Run in test mode with mock data
+    --api-url    API base URL (default: https://api.greenglacier-5bc2e6c1.japaneast.azurecontainerapps.io)
 """
 
 import json
@@ -29,9 +30,10 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Configuration
-API_BASE_URL = "https://api.greenglacier-5bc2e6c1.japaneast.azurecontainerapps.io"
+# Default configuration
+DEFAULT_API_BASE_URL = "https://api.greenglacier-5bc2e6c1.japaneast.azurecontainerapps.io"
 API_KEY = os.environ.get("PUBLIC_API_KEY", "")
+API_BASE_URL = DEFAULT_API_BASE_URL  # Will be overridden by command line argument if provided
 
 # Paths
 SCRIPT_DIR = Path(__file__).parent
@@ -164,12 +166,17 @@ def get_mock_report_result(slug):
 
 def main():
     """Main function to fetch and save reports."""
-    global API_KEY
+    global API_KEY, API_BASE_URL
     
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Fetch reports from API and save them locally")
     parser.add_argument("--test", action="store_true", help="Run in test mode with mock data")
+    parser.add_argument("--api-url", default=DEFAULT_API_BASE_URL, 
+                        help=f"API base URL (default: {DEFAULT_API_BASE_URL})")
     args = parser.parse_args()
+    
+    # Set API base URL from command line argument
+    API_BASE_URL = args.api_url
     
     # Test mode uses mock data
     if args.test:
