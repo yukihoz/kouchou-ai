@@ -323,6 +323,7 @@ export default function Page() {
                           value={spreadsheetUrl}
                           onChange={e => setSpreadsheetUrl(e.target.value)}
                           placeholder="https://docs.google.com/spreadsheets/d/xxxxxxxxxxxx/edit"
+                          disabled={spreadsheetImported}  // インポート済みの場合はURL入力も無効化
                         />
                         <Button
                           onClick={importSpreadsheet}
@@ -343,6 +344,21 @@ export default function Page() {
                       <Text color="green.500" fontSize="sm">
                         スプレッドシートのデータ {spreadsheetData.length} 件を取得しました
                       </Text>
+                    )}
+
+                    {/* スプレッドシートデータ再取得のためのボタンを追加 */}
+                    {spreadsheetImported && (
+                      <Button
+                        onClick={() => {
+                          setSpreadsheetImported(false)
+                          setSpreadsheetData([])
+                        }}
+                        colorScheme="red"
+                        variant="outline"
+                        size="sm"
+                      >
+                        データをクリアして再入力
+                      </Button>
                     )}
                   </VStack>
                 </Tabs.Content>
