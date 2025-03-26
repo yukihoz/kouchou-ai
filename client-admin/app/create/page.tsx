@@ -334,7 +334,10 @@ export default function Page() {
                           {spreadsheetImported ? '取得済み' : 'データを取得'}
                         </Button>
                       </HStack>
-                      <Field.HelperText>公開されているGoogleスプレッドシートのURLを入力してください</Field.HelperText>
+                      <Field.HelperText>
+                        公開されているGoogleスプレッドシートのURLを入力してください<br />
+                        スプレッドシートの<b>&quot;comment&quot;</b>カラムのテキストが分析対象となります(それ以外のカラムは無視されます)
+                      </Field.HelperText>
                     </Field.Root>
                     {spreadsheetImported && (
                       <Text color="green.500" fontSize="sm">
