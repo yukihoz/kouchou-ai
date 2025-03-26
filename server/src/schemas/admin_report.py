@@ -1,3 +1,5 @@
+from typing import Literal
+
 from src.schemas.base import SchemaBaseModel
 
 
@@ -27,3 +29,4 @@ class ReportInput(SchemaBaseModel):
     workers: int  # LLM APIの並列実行数
     prompt: Prompt  # プロンプト
     comments: list[Comment]  # コメントのリスト
+    inputType: Literal["file", "spreadsheet"] = "file"  # 入力タイプ

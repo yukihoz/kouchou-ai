@@ -13,12 +13,14 @@ import {
   Presence,
   Textarea,
   useDisclosure,
-  VStack
+  VStack,
+  Text,
+  Tabs
 } from '@chakra-ui/react'
 import { FileUploadDropzone, FileUploadList, FileUploadRoot } from '@/components/ui/file-upload'
 import { useState } from 'react'
 import { StepperInput } from '@/components/ui/stepper-input'
-import { parseCsv } from '@/app/create/parseCsv'
+import { parseCsv, CsvData } from '@/app/create/parseCsv'
 import { useRouter } from 'next/navigation'
 import { toaster } from '@/components/ui/toaster'
 import { extractionPrompt } from './extractionPrompt'
@@ -28,6 +30,13 @@ import { overviewPrompt } from '@/app/create/overviewPrompt'
 import { ChevronRightIcon, DownloadIcon } from 'lucide-react'
 import { v4 } from 'uuid'
 
+interface SpreadsheetComment {
+  id?: string
+  comment: string
+  source?: string | null
+  url?: string | null
+}
+
 export default function Page() {
   const router = useRouter()
   const { open, onToggle } = useDisclosure()
@@ -36,6 +45,11 @@ export default function Page() {
   const [question, setQuestion] = useState<string>('')
   const [intro, setIntro] = useState<string>('')
   const [csv, setCsv] = useState<File | null>(null)
+  const [inputType, setInputType] = useState<'file' | 'spreadsheet'>('file')
+  const [spreadsheetUrl, setSpreadsheetUrl] = useState<string>('')
+  const [spreadsheetImported, setSpreadsheetImported] = useState<boolean>(false)
+  const [spreadsheetLoading, setSpreadsheetLoading] = useState<boolean>(false)
+  const [spreadsheetData, setSpreadsheetData] = useState<SpreadsheetComment[]>([])
   const [model, setModel] = useState<string>('gpt-4o-mini')
   const [clusterLv1, setClusterLv1] = useState<number>(5)
   const [clusterLv2, setClusterLv2] = useState<number>(50)
@@ -45,9 +59,96 @@ export default function Page() {
   const [mergeLabelling, setMergeLabelling] = useState<string>(mergeLabellingPrompt)
   const [overview, setOverview] = useState<string>(overviewPrompt)
 
+  async function importSpreadsheet() {
+    if (!spreadsheetUrl.trim()) {
+      toaster.create({
+        type: 'error',
+        title: '入力エラー',
+        description: 'スプレッドシートのURLを入力してください',
+      })
+      return
+    }
+
+    setSpreadsheetLoading(true)
+    try {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_BASEPATH + '/admin/spreadsheet/import', {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url: spreadsheetUrl,
+          file_name: input
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || '不明なエラーが発生しました')
+      }
+
+      await response.json()
+
+      // スプレッドシートのデータを取得
+      const commentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/spreadsheet/data/${input}`, {
+        headers: {
+          'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
+        },
+      })
+
+      if (!commentResponse.ok) {
+        throw new Error('スプレッドシートデータの取得に失敗しました')
+      }
+
+      const commentData = await commentResponse.json()
+      setSpreadsheetData(commentData.comments)
+
+      toaster.create({
+        type: 'success',
+        title: '成功',
+        description: `スプレッドシートのデータ ${commentData.comments.length} 件を取得しました`,
+      })
+      setSpreadsheetImported(true)
+    } catch (e) {
+      console.error(e)
+
+      // エラーメッセージを解析して、より適切な短いメッセージに変換
+      const errorMessage = e instanceof Error ? e.message : '不明なエラーが発生しました'
+      let displayErrorMessage = ''
+
+      // URLやアクセス権限のエラー
+      if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+        displayErrorMessage = 'スプレッドシートへのアクセス権限がありません。公開設定を確認してください。'
+      }
+      // 存在しないシートなど
+      else if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+        displayErrorMessage = 'スプレッドシートが見つかりません。URLを確認してください。'
+      }
+      // スプレッドシート形式の問題
+      else if (errorMessage.includes('comment') || errorMessage.includes('カラム')) {
+        displayErrorMessage = 'スプレッドシートの形式が正しくありません。commentカラムが必要です。'
+      }
+      // その他のエラー
+      else {
+        displayErrorMessage = 'スプレッドシートの取得に失敗しました。URLと公開設定を確認してください。'
+      }
+
+      toaster.create({
+        type: 'error',
+        title: 'データ取得エラー',
+        description: displayErrorMessage,
+      })
+      setSpreadsheetImported(false)
+    } finally {
+      setSpreadsheetLoading(false)
+    }
+  }
+
   async function onSubmit() {
     setLoading(true)
-    const precheck = [
+
+    const commonCheck = [
       /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(input),
       question.length > 0,
       intro.length > 0,
@@ -55,11 +156,14 @@ export default function Page() {
       clusterLv2 > 0,
       model.length > 0,
       extraction.length > 0,
-      !!csv
     ].every(Boolean)
-    if (!precheck) {
+
+    const sourceCheck =
+      (inputType === 'file' && !!csv) ||
+      (inputType === 'spreadsheet' && spreadsheetImported)
+
+    if (!commonCheck || !sourceCheck) {
       toaster.create({
-        // placement: 'bottom',
         type: 'error',
         title: '入力エラー',
         description: '全ての項目が入力されているか確認してください',
@@ -67,30 +171,39 @@ export default function Page() {
       setLoading(false)
       return
     }
-    let comments = []
+    let comments: CsvData[] = []
     try {
-      comments = await parseCsv(csv!)
-      if (comments.length < clusterLv2) {
-        const confirmProceed = window.confirm(
-          `csvファイルの行数 (${comments.length}) が設定された意見グループ数 (${clusterLv2}) を下回っています。このまま続けますか？
-          \n※コメントから抽出される意見が設定された意見グループ数に満たない場合、処理中にエラーになる可能性があります（一つのコメントから複数の意見が抽出されることもあるため、問題ない場合もあります）。
-          \n意見グループ数を変更する場合は、「AI詳細設定」を開いてください。`
-        )
-        if (!confirmProceed) {
+      if (inputType === 'file' && csv) {
+        try {
+          comments = await parseCsv(csv)
+          if (comments.length < clusterLv2) {
+            const confirmProceed = window.confirm(
+              `csvファイルの行数 (${comments.length}) が設定された意見グループ数 (${clusterLv2}) を下回っています。このまま続けますか？
+              \n※コメントから抽出される意見が設定された意見グループ数に満たない場合、処理中にエラーになる可能性があります（一つのコメントから複数の意見が抽出されることもあるため、問題ない場合もあります）。
+              \n意見グループ数を変更する場合は、「AI詳細設定」を開いてください。`
+            )
+            if (!confirmProceed) {
+              setLoading(false)
+              return
+            }
+          }
+        } catch (e) {
+          toaster.create({
+            type: 'error',
+            title: 'CSVファイルの読み込みに失敗しました',
+            description: e as string,
+          })
           setLoading(false)
           return
         }
+      } else if (inputType === 'spreadsheet' && spreadsheetImported) {
+        comments = spreadsheetData.map((item, index) => ({
+          id: item.id || `spreadsheet-${index + 1}`,
+          comment: item.comment,
+          source: item.source || null,
+          url: item.url || null
+        }))
       }
-    } catch (e) {
-      toaster.create({
-        type: 'error',
-        title: 'CSVファイルの読み込みに失敗しました',
-        description: e as string,
-      })
-      setLoading(false)
-      return
-    }
-    try {
       const response = await fetch(process.env.NEXT_PUBLIC_API_BASEPATH + '/admin/reports', {
         method: 'POST',
         headers: {
@@ -110,7 +223,8 @@ export default function Page() {
             initialLabelling,
             mergeLabelling,
             overview
-          }
+          },
+          inputType
         })
       })
       if (!response.ok) {
@@ -134,6 +248,10 @@ export default function Page() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleTabValueChange = (details: { value: string }) => {
+    setInputType(details.value as 'file' | 'spreadsheet')
   }
 
   return (
@@ -161,44 +279,113 @@ export default function Page() {
             <Field.HelperText>コメントの集計期間や、コメントの収集元など、調査の概要を記載します</Field.HelperText>
           </Field.Root>
           <Field.Root>
-            <Field.Label>
-              コメントファイル
-              <Link href="/sample_comments.csv"
-                download
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  marginLeft: '8px',
-                  textDecoration: 'underline',
-                  fontSize: '0.8rem',
-                }}
-              >
-                <DownloadIcon size={14} />
-                サンプルCSV
-              </Link>
-            </Field.Label>
-            <VStack alignItems="stretch" w="full">
-              <FileUploadRoot
-                w={'full'}
-                alignItems="stretch"
-                accept={['text/csv']}
-                inputProps={{ multiple: false }}
-                onFileChange={(e) => setCsv(e.acceptedFiles[0])}
-              >
-                <Box opacity={csv ? 0.5 : 1} pointerEvents={csv ? 'none' : 'auto'}>
-                  <FileUploadDropzone
-                    label="分析するコメントファイルを選択してください"
-                    description=".csv"
-                  />
-                </Box>
-                <FileUploadList
-                  clearable={true}
-                  onRemove={() => setCsv(null)}
-                />
-              </FileUploadRoot>
-              <Field.HelperText>カラムに<b>&quot;comment&quot;</b>を含むCSVファイルが必要です(それ以外のカラムは無視されます)</Field.HelperText>
-            </VStack>
+            <Field.Label>入力データ</Field.Label>
+            <Tabs.Root
+              defaultValue="file"
+              value={inputType}
+              onValueChange={handleTabValueChange}
+              variant="enclosed"
+              width="100%"
+            >
+              <Tabs.List>
+                <Tabs.Trigger value="file">CSVファイル</Tabs.Trigger>
+                <Tabs.Trigger value="spreadsheet">Googleスプレッドシート</Tabs.Trigger>
+                <Tabs.Indicator />
+              </Tabs.List>
+
+              <Box p={4}>
+                <Tabs.Content value="file">
+                  <VStack alignItems="stretch" w="full">
+                    <Link href="/sample_comments.csv"
+                      download
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        marginLeft: '8px',
+                        textDecoration: 'underline',
+                        fontSize: '0.8rem',
+                      }}
+                    >
+                      <DownloadIcon size={14} />
+                      サンプルCSVをダウンロード
+                    </Link>
+                    <FileUploadRoot
+                      w={'full'}
+                      alignItems="stretch"
+                      accept={['text/csv']}
+                      inputProps={{ multiple: false }}
+                      onFileChange={(e) => setCsv(e.acceptedFiles[0])}
+                    >
+                      <Box opacity={csv ? 0.5 : 1} pointerEvents={csv ? 'none' : 'auto'}>
+                        <FileUploadDropzone
+                          label="分析するコメントファイルを選択してください"
+                          description=".csv"
+                        />
+                      </Box>
+                      <FileUploadList
+                        clearable={true}
+                        onRemove={() => setCsv(null)}
+                      />
+                    </FileUploadRoot>
+                    <Field.HelperText>カラムに<b>&quot;comment&quot;</b>を含むCSVファイルが必要です(それ以外のカラムは無視されます)</Field.HelperText>
+                  </VStack>
+                </Tabs.Content>
+
+                <Tabs.Content value="spreadsheet">
+                  <VStack alignItems="stretch" w="full" gap={4}>
+                    <Field.Root>
+                      <Field.Label>スプレッドシートURL</Field.Label>
+                      <HStack w="full" flexDir={['column', 'column', 'row']}
+                        alignItems={['stretch', 'stretch', 'center']} 
+                        gap={[2, 2, 4]}
+                      >
+                        <Input
+                          flex="1"
+                          value={spreadsheetUrl}
+                          onChange={e => setSpreadsheetUrl(e.target.value)}
+                          placeholder="https://docs.google.com/spreadsheets/d/xxxxxxxxxxxx/edit"
+                          disabled={spreadsheetImported}  // インポート済みの場合はURL入力も無効化
+                        />
+                        <Button
+                          onClick={importSpreadsheet}
+                          loading={spreadsheetLoading}
+                          disabled={spreadsheetImported}
+                          whiteSpace="nowrap"
+                          width={['full', 'full', 'auto']}
+                        >
+                          {spreadsheetImported ? '取得済み' : 'データを取得'}
+                        </Button>
+                      </HStack>
+                      <Field.HelperText>
+                        公開されているGoogleスプレッドシートのURLを入力してください<br />
+                        スプレッドシートの<b>&quot;comment&quot;</b>カラムのテキストが分析対象となります(それ以外のカラムは無視されます)
+                      </Field.HelperText>
+                    </Field.Root>
+                    {spreadsheetImported && (
+                      <Text color="green.500" fontSize="sm">
+                        スプレッドシートのデータ {spreadsheetData.length} 件を取得しました
+                      </Text>
+                    )}
+
+                    {/* スプレッドシートデータ再取得のためのボタンを追加 */}
+                    {spreadsheetImported && (
+                      <Button
+                        onClick={() => {
+                          setSpreadsheetImported(false)
+                          setSpreadsheetData([])
+                        }}
+                        colorScheme="red"
+                        variant="outline"
+                        size="sm"
+                      >
+                        データをクリアして再入力
+                      </Button>
+                    )}
+                  </VStack>
+                </Tabs.Content>
+              </Box>
+            </Tabs.Root>
           </Field.Root>
           <HStack justify={'flex-end'} w={'full'}>
             <Button onClick={onToggle} variant={'outline'} w={'200px'}>
