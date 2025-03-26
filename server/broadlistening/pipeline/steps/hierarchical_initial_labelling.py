@@ -31,7 +31,7 @@ def hierarchical_initial_labelling(config: dict) -> None:
     dataset = config["output_dir"]
     path = f"outputs/{dataset}/hierarchical_initial_labels.csv"
     clusters_argument_df = pd.read_csv(f"outputs/{dataset}/hierarchical_clusters.csv")
-    breakpoint()
+
     cluster_id_columns = [col for col in clusters_argument_df.columns if col.startswith("cluster-level-")]
     initial_cluster_id_column = cluster_id_columns[-1]
     sampling_num = config["hierarchical_initial_labelling"]["sampling_num"]
@@ -59,7 +59,7 @@ def hierarchical_initial_labelling(config: dict) -> None:
         }
     )
     print("end initial labelling")
-    breakpoint()
+    # breakpoint()
     initial_clusters_argument_df.to_csv(path, index=False)
 
 

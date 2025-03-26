@@ -57,9 +57,9 @@ def extraction(config):
             rows.append({
                 "arg-id": f"A{idx}",
                 "argument": arg,
-                "comment-ids": list(data["comment_ids"]),
+                "comment-id": list(data["comment_ids"]),
             })
-        breakpoint()
+
         results = pd.DataFrame(rows)
 
     else:
@@ -88,7 +88,7 @@ def extraction(config):
     classification_categories = config["extraction"]["categories"]
     if classification_categories:
         results = classify_args(results, config, workers)
-    breakpoint()
+
     results.to_csv(path, index=False)
 
 

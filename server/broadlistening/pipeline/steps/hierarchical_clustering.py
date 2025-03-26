@@ -37,7 +37,7 @@ def hierarchical_clustering(config):
 
     for cluster_level, final_labels in enumerate(cluster_results.values(), start=1):
         result_df[f"cluster-level-{cluster_level}-id"] = [f"{cluster_level}_{label}" for label in final_labels]
-    breakpoint()
+    
     result_df.to_csv(path, index=False)
 
 
