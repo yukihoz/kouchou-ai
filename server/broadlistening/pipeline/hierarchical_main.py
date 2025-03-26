@@ -58,8 +58,8 @@ def main():
     config = initialization(new_argv)
 
     try:
-        run_step("extraction", extraction, config)
-        run_step("embedding", embedding, config)
+        # run_step("extraction", extraction, config)
+        # run_step("embedding", embedding, config)
         run_step("hierarchical_clustering", hierarchical_clustering, config)
         run_step("hierarchical_initial_labelling", hierarchical_initial_labelling, config)
         run_step("hierarchical_merge_labelling", hierarchical_merge_labelling, config)
