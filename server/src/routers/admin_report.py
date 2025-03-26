@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Security
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, FileResponse
 from fastapi.security.api_key import APIKeyHeader
 from src.config import settings
 from src.schemas.admin_report import ReportInput
@@ -7,6 +7,9 @@ from src.schemas.report import Report
 from src.services.report_launcher import launch_report_generation
 from src.services.report_status import load_status_as_reports
 from src.utils.logger import setup_logger
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).parent.parent.parent.parent
 
 slogger = setup_logger()
 router = APIRouter()
@@ -45,6 +48,12 @@ async def create_report(report: ReportInput, api_key: str = Depends(verify_admin
     """
     try:
         launch_report_generation(report)
+        if report.is_pubcom:
+            return FileResponse(
+            path = f"{ROOT_DIR}/server/broadlistening/pipeline/outputs/{report.input}/final_result_with_comments.csv",
+            media_type="text/csv",
+            filename="final_result_with_comments.csv"
+            )
         return ORJSONResponse(
             content=None,
             headers={

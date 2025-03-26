@@ -71,6 +71,8 @@ def hierarchical_aggregation(config):
         results["overview"] = overview
         with open(path, "w") as file:
             json.dump(results, file, indent=2, ensure_ascii=False)
+        # TODO: サンプリングロジックを実装したいが、現状は全件抽出
+        create_custom_intro(config)
     else:
         # 大カテゴリ（cluster-level-1）に該当するラベルだけ抽出
         labels_lv1 = labels[labels["level"] == 1][["id", "label"]].rename(columns={"id": "cluster-level-1-id", "label": "category_label"})
@@ -119,8 +121,7 @@ def hierarchical_aggregation(config):
         # 保存
         final_df.to_csv(f"outputs/{config['output_dir']}/final_result_with_comments.csv", index=False)
 
-    # TODO: サンプリングロジックを実装したいが、現状は全件抽出
-    create_custom_intro(config)
+
 
 
 def create_custom_intro(config):
