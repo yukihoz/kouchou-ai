@@ -426,6 +426,7 @@ export default function Page() {
                             setSpreadsheetData([])
                             setSpreadsheetLoading(false)
                             setImportedId('')
+                            setSpreadsheetUrl('')
                           }
                         }}
                         colorScheme="red"
