@@ -89,7 +89,7 @@ export function Analysis({result}: ReportProps) {
               >
                 {clusterNum['1'].toLocaleString()}
               </Text>
-              <Text fontSize={'md'}>/</Text>
+              <Text fontSize={'md'}>→</Text>
               <Text
                 className={'headingColor'}
                 fontSize={'3xl'}
