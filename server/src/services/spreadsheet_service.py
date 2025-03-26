@@ -103,6 +103,7 @@ def delete_input_file(file_name: str) -> None:
         slogger.error(f"ファイル {file_name}.csv の削除に失敗しました: {e}")
         raise
 
+
 # 将来的に認証対応が必要になった場合の拡張ポイント
 # def fetch_private_spreadsheet(sheet_id: str, sheet_name: str | None = None, credentials=None) -> pd.DataFrame:
 #     """
