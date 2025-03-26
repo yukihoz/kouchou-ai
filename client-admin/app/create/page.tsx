@@ -112,10 +112,32 @@ export default function Page() {
       setSpreadsheetImported(true)
     } catch (e) {
       console.error(e)
+
+      // エラーメッセージを解析して、より適切な短いメッセージに変換
+      const errorMessage = e instanceof Error ? e.message : '不明なエラーが発生しました'
+      let displayErrorMessage = ''
+
+      // URLやアクセス権限のエラー
+      if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+        displayErrorMessage = 'スプレッドシートへのアクセス権限がありません。公開設定を確認してください。'
+      }
+      // 存在しないシートなど
+      else if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+        displayErrorMessage = 'スプレッドシートが見つかりません。URLを確認してください。'
+      }
+      // スプレッドシート形式の問題
+      else if (errorMessage.includes('comment') || errorMessage.includes('カラム')) {
+        displayErrorMessage = 'スプレッドシートの形式が正しくありません。commentカラムが必要です。'
+      }
+      // その他のエラー
+      else {
+        displayErrorMessage = 'スプレッドシートの取得に失敗しました。URLと公開設定を確認してください。'
+      }
+
       toaster.create({
         type: 'error',
         title: 'データ取得エラー',
-        description: e instanceof Error ? e.message : '不明なエラーが発生しました',
+        description: displayErrorMessage,
       })
       setSpreadsheetImported(false)
     } finally {
