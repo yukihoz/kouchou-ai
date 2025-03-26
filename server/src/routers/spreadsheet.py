@@ -6,8 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
 from src.config import settings
-from src.services.spreadsheet_service import process_spreadsheet_url
+from src.services.spreadsheet_service import delete_input_file, process_spreadsheet_url
 from src.utils.logger import setup_logger
+from src.utils.validation import validate_filename
 
 slogger = setup_logger()
 router = APIRouter()
@@ -115,3 +116,28 @@ async def get_spreadsheet_data(file_name: str, api_key: str = Depends(verify_adm
     except Exception as e:
         slogger.error(f"スプレッドシートデータの取得エラー: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"データ取得中にエラーが発生しました: {str(e)}") from e
+
+
+@router.delete("/admin/inputs/{file_name}")
+async def delete_input(file_name: str, api_key: str = Depends(verify_admin_api_key)) -> dict[str, str]:
+    # IDのバリデーション
+    valid, message = validate_filename(file_name)
+    if not valid:
+        raise HTTPException(status_code=400, detail=message)
+
+    try:
+        delete_input_file(file_name)
+        return {
+            "status": "success",
+            "message": f"{file_name}.csvの削除が完了しました",
+        }
+    except FileNotFoundError as e:
+        slogger.warning(f"削除対象のファイルが見つかりません: {e}")
+        # ファイルが見つからない場合も成功として扱う（冪等性のため）
+        return {
+            "status": "success",
+            "message": f"{file_name}.csvは既に削除されているか存在しません",
+        }
+    except Exception as e:
+        slogger.error(f"ファイル削除エラー: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"ファイル削除中にエラーが発生しました: {str(e)}") from e
