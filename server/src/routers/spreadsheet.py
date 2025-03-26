@@ -98,7 +98,7 @@ async def get_spreadsheet_data(file_name: str, api_key: str = Depends(verify_adm
         for _, row in df.iterrows():
             comment: dict[str, str | None] = {
                 "id": row.get("comment-id", f"id-{len(comments) + 1}"),
-                "comment": row.get("comment-body", row.get("comment", "")),
+                "comment": row.get("comment", ""),
             }
 
             # オプションフィールドを追加

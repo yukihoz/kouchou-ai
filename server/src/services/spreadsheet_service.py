@@ -49,12 +49,11 @@ def fetch_public_spreadsheet(sheet_id: str, sheet_name: str | None = None) -> pd
         if "comment" not in df.columns and "comment-body" not in df.columns:
             raise ValueError("スプレッドシートには 'comment' または 'comment-body' カラムが必要です")
 
-        # カラム名の調整
-        if "comment-body" not in df.columns and "comment" in df.columns:
-            df["comment-body"] = df["comment"]
-
-        if "comment" not in df.columns and "comment-body" in df.columns:
-            df["comment"] = df["comment-body"]
+        # カラム名をcommentに統一
+        if "comment-body" in df.columns:
+            if "comment" not in df.columns:
+                df["comment"] = df["comment-body"]
+            df.drop(columns=["comment-body"], inplace=True)
 
         # comment-idがなければ作成
         if "comment-id" not in df.columns:
