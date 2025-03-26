@@ -1,3 +1,4 @@
+import os
 import re
 from io import StringIO
 from pathlib import Path
@@ -6,6 +7,7 @@ import pandas as pd
 import requests
 from src.config import settings
 from src.utils.logger import setup_logger
+from src.utils.validation import validate_filename
 
 slogger = setup_logger()
 
@@ -74,6 +76,11 @@ def save_as_csv(df: pd.DataFrame, file_name: str) -> Path:
 
 
 def process_spreadsheet_url(url: str, file_name: str) -> Path:
+    # ファイル名のバリデーション
+    valid, message = validate_filename(file_name)
+    if not valid:
+        raise ValueError(message)
+
     try:
         sheet_id, sheet_name = parse_spreadsheet_url(url)
         df = fetch_public_spreadsheet(sheet_id, sheet_name)
@@ -81,6 +88,20 @@ def process_spreadsheet_url(url: str, file_name: str) -> Path:
     except Exception as e:
         slogger.error(f"スプレッドシートURL処理エラー: {e}")
         raise ValueError(f"スプレッドシートの処理に失敗しました: {e}") from e
+
+
+def delete_input_file(file_name: str) -> None:
+    input_path = settings.INPUT_DIR / f"{file_name}.csv"
+
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(f"ファイル {file_name}.csv が見つかりません")
+
+    try:
+        os.remove(input_path)
+        slogger.info(f"ファイル {file_name}.csv を削除しました")
+    except OSError as e:
+        slogger.error(f"ファイル {file_name}.csv の削除に失敗しました: {e}")
+        raise
 
 
 # 将来的に認証対応が必要になった場合の拡張ポイント

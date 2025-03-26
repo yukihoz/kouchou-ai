@@ -42,6 +42,7 @@ export default function Page() {
   const { open, onToggle } = useDisclosure()
   const [loading, setLoading] = useState<boolean>(false)
   const [input, setInput] = useState<string>(v4())
+  const [importedId, setImportedId] = useState<string>('')
   const [question, setQuestion] = useState<string>('')
   const [intro, setIntro] = useState<string>('')
   const [csv, setCsv] = useState<File | null>(null)
@@ -59,12 +60,31 @@ export default function Page() {
   const [mergeLabelling, setMergeLabelling] = useState<string>(mergeLabellingPrompt)
   const [overview, setOverview] = useState<string>(overviewPrompt)
 
+  // IDのバリデーション関数
+  const isValidId = (id: string): boolean => {
+    return /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(id) && id.length <= 255
+  }
+
+  // IDのバリデーション結果を状態として持つ
+  const [isIdValid, setIsIdValid] = useState<boolean>(true)
+
+  // 入力変更時にバリデーションを実行
+  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newId = e.target.value
+    setInput(newId)
+    setIsIdValid(isValidId(newId))
+  }
+
+  const canImport = spreadsheetUrl.trim() && isIdValid && !spreadsheetImported
+
   async function importSpreadsheet() {
-    if (!spreadsheetUrl.trim()) {
+    if (!canImport) {
       toaster.create({
         type: 'error',
         title: '入力エラー',
-        description: 'スプレッドシートのURLを入力してください',
+        description: !isIdValid
+          ? 'IDは英小文字、数字、ハイフンのみ使用できます'
+          : 'スプレッドシートのURLを入力してください',
       })
       return
     }
@@ -89,6 +109,8 @@ export default function Page() {
       }
 
       await response.json()
+
+      setImportedId(input)
 
       // スプレッドシートのデータを取得
       const commentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/spreadsheet/data/${input}`, {
@@ -350,7 +372,7 @@ export default function Page() {
                         <Button
                           onClick={importSpreadsheet}
                           loading={spreadsheetLoading}
-                          disabled={spreadsheetImported}
+                          disabled={!canImport}
                           whiteSpace="nowrap"
                           width={['full', 'full', 'auto']}
                         >
@@ -371,13 +393,47 @@ export default function Page() {
                     {/* スプレッドシートデータ再取得のためのボタンを追加 */}
                     {spreadsheetImported && (
                       <Button
-                        onClick={() => {
-                          setSpreadsheetImported(false)
-                          setSpreadsheetData([])
+                        onClick={async () => {
+                          try {
+                            setSpreadsheetLoading(true)
+                            // サーバー側のデータを削除するAPI呼び出し - インポート時のIDを使用
+                            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/inputs/${importedId}`, {
+                              method: 'DELETE',
+                              headers: {
+                                'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
+                              },
+                            })
+
+                            if (!response.ok) {
+                              throw new Error('データのクリアに失敗しました')
+                            }
+
+                            toaster.create({
+                              type: 'success',
+                              title: '成功',
+                              description: 'データをクリアしました',
+                            })
+                          } catch (e) {
+                            console.error(e)
+                            toaster.create({
+                              type: 'warning',
+                              title: '警告',
+                              description: 'サーバー側のデータクリアに失敗しましたが、入力をリセットしました',
+                            })
+                          } finally {
+                            // UIの状態をリセット
+                            setSpreadsheetImported(false)
+                            setSpreadsheetData([])
+                            setSpreadsheetLoading(false)
+                            setImportedId('')
+                            setSpreadsheetUrl('')
+                          }
                         }}
                         colorScheme="red"
                         variant="outline"
                         size="sm"
+                        loading={spreadsheetLoading}
+                        loadingText="クリア中..."
                       >
                         データをクリアして再入力
                       </Button>
@@ -399,9 +455,17 @@ export default function Page() {
                 <Input
                   w={'40%'}
                   value={input}
-                  onChange={e => setInput(e.target.value)}
+                  onChange={handleIdChange}
                   placeholder="例：example"
+                  aria-invalid={!isIdValid}
+                  borderColor={!isIdValid ? 'red.300' : undefined}
+                  _hover={!isIdValid ? { borderColor: 'red.400' } : undefined}
                 />
+                {!isIdValid && (
+                  <Text color="red.500" fontSize="sm" mt={1}>
+                    IDは英小文字、数字、ハイフンのみ使用できます
+                  </Text>
+                )}
                 <Field.HelperText>英字小文字と数字とハイフンのみ(URLで利用されます)</Field.HelperText>
               </Field.Root>
               <Field.Root>
