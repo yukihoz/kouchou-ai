@@ -65,7 +65,7 @@ export function SelectChartButton({selected, onChange, onClickDensitySetting, on
             <Button
               onClick={async () => {
                 try {
-                  const response = await fetch(getApiBaseUrl + `/get-csv/${csvPath}`, {
+                  const response = await fetch(getApiBaseUrl() + `/get-csv/${csvPath}`, {
                     headers: {
                       'x-api-key': process.env.NEXT_PUBLIC_PUBLIC_API_KEY || '',
                       'Content-Type': 'application/json'
