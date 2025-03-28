@@ -26,9 +26,9 @@ services:
       context: ./client
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_BASEPATH=http://localhost:8000
-        - API_BASEPATH=http://api:8000
-        - NEXT_PUBLIC_PUBLIC_API_KEY=public
+        - NEXT_PUBLIC_API_BASEPATH=${NEXT_PUBLIC_API_BASEPATH}
+        - API_BASEPATH=${API_BASEPATH}
+        - NEXT_PUBLIC_PUBLIC_API_KEY=${NEXT_PUBLIC_PUBLIC_API_KEY}
     depends_on:
       api:
         condition: service_healthy
@@ -47,9 +47,9 @@ services:
       context: ./client-admin
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_CLIENT_BASEPATH=http://localhost:3000
-        - NEXT_PUBLIC_API_BASEPATH=http://localhost:8000
-        - NEXT_PUBLIC_ADMIN_API_KEY=admin
+        - NEXT_PUBLIC_CLIENT_BASEPATH=${NEXT_PUBLIC_CLIENT_BASEPATH}
+        - NEXT_PUBLIC_API_BASEPATH=${NEXT_PUBLIC_API_BASEPATH}
+        - NEXT_PUBLIC_ADMIN_API_KEY=${NEXT_PUBLIC_ADMIN_API_KEY}
     ports:
       - "4000:4000"
     env_file:
