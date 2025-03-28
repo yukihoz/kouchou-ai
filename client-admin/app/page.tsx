@@ -100,38 +100,38 @@ export default function Page() {
                   </HStack>
                   <HStack>
 
-                  {report.status === 'ready' && report.isPubcom && (
-                    <Tooltip content={'CSVファイルをダウンロード'} openDelay={0} closeDelay={0}>
-  <Button
-    variant={'ghost'}
-    onClick={async () => {
-      try {
-        const response = await fetch(getApiBaseUrl() + `/get-csv/${report.slug}`, {
-          headers: {
-            'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
-            'Content-Type': 'application/json'
-          }
-        })
-        if (!response.ok) {
-          throw new Error('CSVダウンロード失敗')
-        }
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `kouchou_${report.slug}.csv`
-        link.click()
-        window.URL.revokeObjectURL(url)
-      } catch (error) {
-        console.error(error)
-        alert('CSVのダウンロードに失敗しました')
-      }
-    }}
-  >
-    <Icon><DownloadIcon/></Icon>
-  </Button>
-</Tooltip>
-)}
+                    {report.status === 'ready' && report.isPubcom && (
+                      <Tooltip content={'CSVファイルをダウンロード'} openDelay={0} closeDelay={0}>
+                        <Button
+                          variant={'ghost'}
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(getApiBaseUrl() + `/get-csv/${report.slug}`, {
+                                headers: {
+                                  'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
+                                  'Content-Type': 'application/json'
+                                }
+                              })
+                              if (!response.ok) {
+                                throw new Error('CSVダウンロード失敗')
+                              }
+                              const blob = await response.blob()
+                              const url = window.URL.createObjectURL(blob)
+                              const link = document.createElement('a')
+                              link.href = url
+                              link.download = `kouchou_${report.slug}.csv`
+                              link.click()
+                              window.URL.revokeObjectURL(url)
+                            } catch (error) {
+                              console.error(error)
+                              alert('CSVのダウンロードに失敗しました')
+                            }
+                          }}
+                        >
+                          <Icon><DownloadIcon/></Icon>
+                        </Button>
+                      </Tooltip>
+                    )}
 
 
 
