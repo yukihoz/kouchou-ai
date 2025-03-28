@@ -78,7 +78,7 @@ export function SelectChartButton({selected, onChange, onClickDensitySetting, on
                   const url = window.URL.createObjectURL(blob)
                   const link = document.createElement('a')
                   link.href = url
-                  link.download = 'report.csv'
+                  link.download = `kouchou_${csvPath}.csv`
                   link.click()
                   window.URL.revokeObjectURL(url)
                 } catch (error) {
