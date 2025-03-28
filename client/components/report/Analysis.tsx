@@ -64,18 +64,18 @@ export function Analysis({result}: ReportProps) {
         </Tooltip>
         <ChevronRightIcon/>
         <Tooltip
-          content={'抽出したコメントをAIで分析し、様々な議論を抽出します。複数の意見が混ざったコメントなども適切に分離します。'}
+          content={'抽出したコメントをAIで分析し、様々な意見を抽出します。複数の意見が混ざったコメントなども適切に分離します。'}
           openDelay={0} closeDelay={0}>
           <VStack gap={0} w={'200px'}>
             <Icon mb={2}><MessagesSquareIcon size={'30px'}/></Icon>
             <Text className={'headingColor'} fontSize={'3xl'} fontWeight={'bold'} lineHeight={1}
               mb={1}>{result.arguments.length.toLocaleString()}</Text>
-            <Text fontSize={'xs'}>抽出した議論数</Text>
+            <Text fontSize={'xs'}>抽出した意見数</Text>
           </VStack>
         </Tooltip>
         <ChevronRightIcon/>
         <Tooltip
-          content={'抽出した議論をAIで分析し、近しい議論を一つの意見グループに分類します。意見グループごとの議論を要約し、大量の意見を見える化します。'}
+          content={'抽出した意見をAIで分析し、近しい意見を一つの意見グループに分類します。意見グループごとの意見を要約し、大量の意見を見える化します。'}
           openDelay={0} closeDelay={0}>
           <VStack gap={0} w={'200px'}>
             <Icon mb={2}><ClipboardCheckIcon size={'30px'}/></Icon>
@@ -89,7 +89,7 @@ export function Analysis({result}: ReportProps) {
               >
                 {clusterNum['1'].toLocaleString()}
               </Text>
-              <Text fontSize={'md'}>/</Text>
+              <Text fontSize={'md'}>→</Text>
               <Text
                 className={'headingColor'}
                 fontSize={'3xl'}
@@ -123,7 +123,7 @@ export function Analysis({result}: ReportProps) {
                   <TimelineContent>
                     <TimelineTitle fontWeight={'bold'}>抽出 ({result.config.extraction.model})</TimelineTitle>
                     <TimelineDescription>
-                      コメントデータから議論（意見）を抽出するステップです。<br/>
+                      コメントデータから意見を抽出するステップです。<br/>
                     </TimelineDescription>
                     <HStack>
                       <Button variant={'outline'} size={'xs'} onClick={() => setSelectedData({
@@ -141,8 +141,8 @@ export function Analysis({result}: ReportProps) {
                   <TimelineContent>
                     <TimelineTitle fontWeight={'bold'}>埋め込み ({result.config.embedding.model})</TimelineTitle>
                     <TimelineDescription>
-                      抽出された議論に対して埋め込み（ベクトル表現）を生成するステップです。<br/>
-                      これにより、議論の内容を数値ベクトルとして表現します。
+                      抽出された意見に対して埋め込み（ベクトル表現）を生成するステップです。<br/>
+                      これにより、意見の内容を数値ベクトルとして表現します。
                     </TimelineDescription>
                     <HStack>
                       <Button variant={'outline'} size={'xs'} onClick={() => setSelectedData({
@@ -156,7 +156,7 @@ export function Analysis({result}: ReportProps) {
                   <TimelineContent>
                     <TimelineTitle fontWeight={'bold'}>クラスタリング</TimelineTitle>
                     <TimelineDescription>
-                      埋め込みベクトルの値に基づいて議論の階層クラスタリングを行うステップです。<br/>
+                      埋め込みベクトルの値に基づいて意見の階層クラスタリングを行うステップです。<br/>
                     </TimelineDescription>
                     <HStack>
                       <Button variant={'outline'} size={'xs'} onClick={() => setSelectedData({
@@ -172,7 +172,7 @@ export function Analysis({result}: ReportProps) {
                       ({result.config.hierarchical_initial_labelling.model})</TimelineTitle>
                     <TimelineDescription>
                       クラスタリングの結果に対して、各クラスタに適切なタイトル・説明文を生成（ラベリング）するステップです。<br/>
-                      このステップでは、最も細かい粒度のクラスタ（最下層のクラスタ）に対して、各クラスタに属する議論に基づいてクラスタのタイトルと説明文を生成します。
+                      このステップでは、最も細かい粒度のクラスタ（最下層のクラスタ）に対して、各クラスタに属する意見に基づいてクラスタのタイトルと説明文を生成します。
                     </TimelineDescription>
                     <HStack>
                       <Button variant={'outline'} size={'xs'} onClick={() => setSelectedData({
@@ -192,7 +192,7 @@ export function Analysis({result}: ReportProps) {
                       ({result.config.hierarchical_merge_labelling.model})</TimelineTitle>
                     <TimelineDescription>
                       階層的クラスタリングの結果に対して、クラスタをマージしながらタイトル・説明文を生成（ラベリング）するステップです。<br/>
-                      このステップでは、下層のクラスタのタイトル及び説明文と、議論に基づいて上層のクラスタのタイトル及び説明文を生成します。
+                      このステップでは、下層のクラスタのタイトル及び説明文と、意見に基づいて上層のクラスタのタイトル及び説明文を生成します。
                     </TimelineDescription>
                     <HStack>
                       <Button variant={'outline'} size={'xs'} onClick={() => setSelectedData({
@@ -230,7 +230,7 @@ export function Analysis({result}: ReportProps) {
                     <TimelineTitle fontWeight={'bold'}>出力</TimelineTitle>
                     <TimelineDescription>
                       最終的な結果を出力するステップです。<br/>
-                      議論および各分析結果を含むJSONファイルを出力します。
+                      意見および各分析結果を含むJSONファイルを出力します。
                     </TimelineDescription>
                     <HStack>
                       <Button variant={'outline'} size={'xs'} onClick={() => setSelectedData({
@@ -245,7 +245,7 @@ export function Analysis({result}: ReportProps) {
                     <TimelineTitle fontWeight={'bold'}>表示</TimelineTitle>
                     <TimelineDescription>
                       出力されたJSONファイルをグラフィカルに表示するステップです。<br/>
-                      意見グループの概要、議論の内容などを可視化します。あなたが見ているこの画面が出来上がります。
+                      意見グループの概要、意見の内容などを可視化します。あなたが見ているこの画面が出来上がります。
                     </TimelineDescription>
                     <HStack>
                       <Button variant={'outline'} size={'xs'} onClick={() => setSelectedData({

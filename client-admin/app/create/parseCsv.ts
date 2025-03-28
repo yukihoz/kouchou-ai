@@ -3,7 +3,12 @@ import {v4} from 'uuid'
 import * as chardet from 'chardet'
 import * as iconv from 'iconv-lite'
 
-type CsvData = Record<string, unknown>
+export interface CsvData {
+  id: string;
+  comment: string;
+  source?: string | null;
+  url?: string | null;
+}
 
 export async function parseCsv(csvFile: File): Promise<CsvData[]> {
   return new Promise((resolve, reject) => {

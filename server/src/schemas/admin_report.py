@@ -1,3 +1,5 @@
+from typing import Literal
+
 from src.schemas.base import SchemaBaseModel
 
 
@@ -28,3 +30,4 @@ class ReportInput(SchemaBaseModel):
     prompt: Prompt  # プロンプト
     comments: list[Comment]  # コメントのリスト
     is_pubcom: bool = False # パブコメモード出力フラグ
+    inputType: Literal["file", "spreadsheet"] = "file"  # 入力タイプ
