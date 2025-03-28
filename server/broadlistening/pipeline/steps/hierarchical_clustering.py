@@ -17,7 +17,7 @@ def hierarchical_clustering(config):
     embeddings_df = pd.read_pickle(f"outputs/{dataset}/embeddings.pkl")
     embeddings_array = np.asarray(embeddings_df["embedding"].values.tolist())
     cluster_nums = config["hierarchical_clustering"]["cluster_nums"]
-    
+
     n_samples = embeddings_array.shape[0]
     # デフォルト設定は15
     default_n_neighbors = 15
@@ -27,7 +27,7 @@ def hierarchical_clustering(config):
         n_neighbors = max(2, n_samples - 1)  # 最低2以上
     else:
         n_neighbors = default_n_neighbors
-    
+
     umap_model = UMAP(random_state=42, n_components=2, n_neighbors=n_neighbors)
     # TODO 詳細エラーメッセージを加える
     # 以下のエラーの場合、おそらく元の意見件数が少なすぎることが原因
@@ -50,7 +50,7 @@ def hierarchical_clustering(config):
 
     for cluster_level, final_labels in enumerate(cluster_results.values(), start=1):
         result_df[f"cluster-level-{cluster_level}-id"] = [f"{cluster_level}_{label}" for label in final_labels]
-    
+
     result_df.to_csv(path, index=False)
 
 

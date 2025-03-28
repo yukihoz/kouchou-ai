@@ -48,20 +48,14 @@ async def report(slug: str, api_key: str = Depends(verify_public_api_key)) -> di
 
 
 @router.get("/get-csv/{slug}")
-async def get_csv(
-    slug: str,
-    api_key: str = Depends(verify_public_api_key)
-):
+async def get_csv(slug: str, api_key: str = Depends(verify_public_api_key)):
     # f"outputs/{config['output_dir']}/final_result_with_comments.csv"
     csv_path = settings.REPORT_DIR / slug / "final_result_with_comments.csv"
     if not csv_path.exists():
         raise HTTPException(status_code=404, detail="CSV file not found")
 
-    return FileResponse(
-        path=str(csv_path),
-        media_type='text/csv',
-        filename=f'kouchou_{slug}.csv'
-    )
+    return FileResponse(path=str(csv_path), media_type="text/csv", filename=f"kouchou_{slug}.csv")
+
 
 @router.get("/test-error")
 async def test_error():

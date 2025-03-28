@@ -54,11 +54,13 @@ def extraction(config):
 
         rows = []
         for idx, (arg, data) in enumerate(argument_map.items()):
-            rows.append({
-                "arg-id": f"A{idx}",
-                "argument": arg,
-                "comment-id": list(data["comment_ids"]),
-            })
+            rows.append(
+                {
+                    "arg-id": f"A{idx}",
+                    "argument": arg,
+                    "comment-id": list(data["comment_ids"]),
+                }
+            )
 
         results = pd.DataFrame(rows)
 

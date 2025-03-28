@@ -45,7 +45,7 @@ async def create_report(report: ReportInput, api_key: str = Depends(verify_admin
     Returns:
         _type_: _description_
     ```Sample Input
-    
+
     """
     try:
         launch_report_generation(report)

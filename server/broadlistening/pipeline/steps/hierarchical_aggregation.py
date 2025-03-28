@@ -69,28 +69,32 @@ def hierarchical_aggregation(config):
     print(overview)
     results["overview"] = overview
 
-    if config['is_pubcom']:
+    if config["is_pubcom"]:
         # 大カテゴリ（cluster-level-1）に該当するラベルだけ抽出
-        labels_lv1 = labels[labels["level"] == 1][["id", "label"]].rename(columns={"id": "cluster-level-1-id", "label": "category_label"})
+        labels_lv1 = labels[labels["level"] == 1][["id", "label"]].rename(
+            columns={"id": "cluster-level-1-id", "label": "category_label"}
+        )
 
         # マージ処理
-        merged = (
-            arguments
-            .merge(clusters[["arg-id", "cluster-level-1-id"]], on="arg-id")
-            .merge(labels_lv1, on="cluster-level-1-id", how="left")
+        merged = arguments.merge(clusters[["arg-id", "cluster-level-1-id"]], on="arg-id").merge(
+            labels_lv1, on="cluster-level-1-id", how="left"
         )
 
         # 必要なカラムのみ抽出・整形
-        merged["comment-id"] = merged["comment-id"].apply(lambda x: eval(x) if isinstance(x, str) else x)  # 文字列→リストに変換
+        merged["comment-id"] = merged["comment-id"].apply(
+            lambda x: eval(x) if isinstance(x, str) else x
+        )  # 文字列→リストに変換
         merged["comment-id"] = merged["comment-id"].apply(lambda ids: [str(i) for i in ids])  # 文字列型IDに統一
 
-        merged = merged[["cluster-level-1-id", "category_label", "arg-id", "argument", "comment-id"]].rename(columns={
-            "cluster-level-1-id": "category_id",
-            "category_label": "category",
-            "arg-id": "arg_id",
-            "argument": "argument",
-            "comment-id": "comment_ids"
-        })
+        merged = merged[["cluster-level-1-id", "category_label", "arg-id", "argument", "comment-id"]].rename(
+            columns={
+                "cluster-level-1-id": "category_id",
+                "category_label": "category",
+                "arg-id": "arg_id",
+                "argument": "argument",
+                "comment-id": "comment_ids",
+            }
+        )
 
         # まず merged の comment_ids を explode で展開
         exploded = merged.explode("comment_ids").rename(columns={"comment_ids": "comment-id"})
@@ -105,25 +109,17 @@ def hierarchical_aggregation(config):
         final_df = exploded.merge(comments, on="comment-id", how="left")
 
         # カラム順を整理
-        final_df = final_df[[
-            "comment-id",
-            "comment-body",
-                "arg_id",
-            "argument",
-            "category_id",
-            "category"
-        ]]
+        final_df = final_df[["comment-id", "comment-body", "arg_id", "argument", "category_id", "category"]]
         final_df = final_df.rename(columns={"comment-body": "original-comment"})
 
         # 保存
         final_df.to_csv(f"outputs/{config['output_dir']}/final_result_with_comments.csv", index=False)
-        results["csv_path"] = config['output_dir']
+        results["csv_path"] = config["output_dir"]
         # results["csv_path"] = f"outputs/{config['output_dir']}/final_result_with_comments.csv"
     with open(path, "w") as file:
         json.dump(results, file, indent=2, ensure_ascii=False)
     # TODO: サンプリングロジックを実装したいが、現状は全件抽出
     create_custom_intro(config)
-
 
 
 def create_custom_intro(config):
