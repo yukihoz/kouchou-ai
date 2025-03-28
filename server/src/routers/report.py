@@ -3,6 +3,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security.api_key import APIKeyHeader
+from fastapi.responses import FileResponse
 from src.config import settings
 from src.schemas.report import Report, ReportStatus
 from src.services.report_status import load_status_as_reports
@@ -45,6 +46,22 @@ async def report(slug: str, api_key: str = Depends(verify_public_api_key)) -> di
 
     return report_result
 
+
+@router.get("/get-csv/{slug}")
+async def get_csv(
+    slug: str,
+    api_key: str = Depends(verify_public_api_key)
+):
+    # f"outputs/{config['output_dir']}/final_result_with_comments.csv"
+    csv_path = settings.REPORT_DIR / slug / "final_result_with_comments.csv"
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="CSV file not found")
+
+    return FileResponse(
+        path=str(csv_path),
+        media_type='text/csv',
+        filename='report.csv'
+    )
 
 @router.get("/test-error")
 async def test_error():

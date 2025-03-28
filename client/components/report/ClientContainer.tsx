@@ -24,6 +24,8 @@ export function ClientContainer({reportName, resultSize, children}: PropsWithChi
   const [maxDensity, setMaxDensity] = useState(0.2)
   const [minValue, setMinValue] = useState(5)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [csvPath, setCsvPath] = useState<string | undefined>(undefined)
+
 
   useEffect(() => {
     fetchReport()
@@ -77,6 +79,9 @@ export function ClientContainer({reportName, resultSize, children}: PropsWithChi
       const r: Result = JSON.parse(result)
       setResult(r)
       setFilteredResult(r)
+      if (r.csv_path) {
+        setCsvPath(r.csv_path)
+      }
     }
   }
 
@@ -119,6 +124,7 @@ export function ClientContainer({reportName, resultSize, children}: PropsWithChi
         onClickFullscreen={() => {
           setIsFullscreen(true)
         }}
+        csvPath={csvPath}
       />
       <Chart
         result={filteredResult}

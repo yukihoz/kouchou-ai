@@ -63,17 +63,14 @@ def hierarchical_aggregation(config):
     # 属性情報のカラムは、元データに対して指定したカラムとclassificationするカテゴリを合わせたもの
     results["propertyMap"] = _build_property_map(arguments, hidden_properties_map, config)
     # breakpoint()
-    if not config['is_pubcom']:
-        with open(f"outputs/{config['output_dir']}/hierarchical_overview.txt") as f:
-            overview = f.read()
-        print("overview")
-        print(overview)
-        results["overview"] = overview
-        with open(path, "w") as file:
-            json.dump(results, file, indent=2, ensure_ascii=False)
-        # TODO: サンプリングロジックを実装したいが、現状は全件抽出
-        create_custom_intro(config)
-    else:
+    # if not config['is_pubcom']:
+    with open(f"outputs/{config['output_dir']}/hierarchical_overview.txt") as f:
+        overview = f.read()
+    print("overview")
+    print(overview)
+    results["overview"] = overview
+
+    if config['is_pubcom']:
         # 大カテゴリ（cluster-level-1）に該当するラベルだけ抽出
         labels_lv1 = labels[labels["level"] == 1][["id", "label"]].rename(columns={"id": "cluster-level-1-id", "label": "category_label"})
 
@@ -120,7 +117,13 @@ def hierarchical_aggregation(config):
 
         # 保存
         final_df.to_csv(f"outputs/{config['output_dir']}/final_result_with_comments.csv", index=False)
-
+        breakpoint()
+        results["csv_path"] = config['output_dir']
+        # results["csv_path"] = f"outputs/{config['output_dir']}/final_result_with_comments.csv"
+    with open(path, "w") as file:
+        json.dump(results, file, indent=2, ensure_ascii=False)
+    # TODO: サンプリングロジックを実装したいが、現状は全件抽出
+    create_custom_intro(config)
 
 
 
