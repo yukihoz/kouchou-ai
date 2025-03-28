@@ -13,7 +13,7 @@ export function ClusterOverview({cluster}: Props) {
         <Heading fontSize={'2xl'} className={'headingColor'} mb={1}>{cluster.label}</Heading>
         <Text fontWeight={'bold'} display='flex' gap={1}>
           <MessagesSquareIcon size={20}/>
-          {cluster.value.toLocaleString()}議論
+          {cluster.value.toLocaleString()}件
         </Text>
       </Box>
       <Text>{cluster.takeaway}</Text>
