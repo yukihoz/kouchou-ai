@@ -25,10 +25,11 @@ import { extractionPrompt } from './extractionPrompt'
 import { initialLabellingPrompt } from '@/app/create/initialLabellingPrompt'
 import { mergeLabellingPrompt } from '@/app/create/mergeLabellingPrompt'
 import { overviewPrompt } from '@/app/create/overviewPrompt'
-import { extractionPrompt as pubcomExtraction } from './pubcom/extractionPrompt'
-import { initialLabellingPrompt as pubcomInitialLabelling } from './pubcom/initialLabellingPrompt'
-import { mergeLabellingPrompt as pubcomMergeLabelling } from './pubcom/mergeLabellingPrompt'
-import { overviewPrompt as pubcomOverview } from './pubcom/overviewPrompt'
+// TODO パブコメモード用のプロンプトを独自に作成する？
+// import { extractionPrompt as pubcomExtraction } from './pubcom/extractionPrompt'
+// import { initialLabellingPrompt as pubcomInitialLabelling } from './pubcom/initialLabellingPrompt'
+// import { mergeLabellingPrompt as pubcomMergeLabelling } from './pubcom/mergeLabellingPrompt'
+// import { overviewPrompt as pubcomOverview } from './pubcom/overviewPrompt'
 import { ChevronRightIcon, DownloadIcon } from 'lucide-react'
 import { v4 } from 'uuid'
 
@@ -237,17 +238,18 @@ export default function Page() {
               w={'200px'}
               onClick={() => {
                 setIsPubcomMode(!isPubcomMode)
-                if (!isPubcomMode) {
-                  setExtraction(pubcomExtraction)
-                  setInitialLabelling(pubcomInitialLabelling)
-                  setMergeLabelling(pubcomMergeLabelling)
-                  setOverview(pubcomOverview)
-                } else {
-                  setExtraction(extractionPrompt)
-                  setInitialLabelling(initialLabellingPrompt)
-                  setMergeLabelling(mergeLabellingPrompt)
-                  setOverview(overviewPrompt)
-                }
+                // TODO パブコメモード用のプロンプトを独自に作成した場合、パブコメモードボタン選択時にデフォルトを切り替える
+                // if (!isPubcomMode) {
+                //   setExtraction(pubcomExtraction)
+                //   setInitialLabelling(pubcomInitialLabelling)
+                //   setMergeLabelling(pubcomMergeLabelling)
+                //   setOverview(pubcomOverview)
+                // } else {
+                //   setExtraction(extractionPrompt)
+                //   setInitialLabelling(initialLabellingPrompt)
+                //   setMergeLabelling(mergeLabellingPrompt)
+                //   setOverview(overviewPrompt)
+                // }
               }}
             >
               パブコメモード {isPubcomMode ? '✓' : ''}
