@@ -17,8 +17,18 @@ def hierarchical_clustering(config):
     embeddings_df = pd.read_pickle(f"outputs/{dataset}/embeddings.pkl")
     embeddings_array = np.asarray(embeddings_df["embedding"].values.tolist())
     cluster_nums = config["hierarchical_clustering"]["cluster_nums"]
+    
+    n_samples = embeddings_array.shape[0]
+    # デフォルト設定は15
+    default_n_neighbors = 15
 
-    umap_model = UMAP(random_state=42, n_components=2)
+    # テスト等サンプルが少なすぎる場合、n_neighborsの設定値を下げる
+    if n_samples <= default_n_neighbors:
+        n_neighbors = max(2, n_samples - 1)  # 最低2以上
+    else:
+        n_neighbors = default_n_neighbors
+    
+    umap_model = UMAP(random_state=42, n_components=2, n_neighbors=n_neighbors)
     umap_embeds = umap_model.fit_transform(embeddings_array)
 
     cluster_results = hierarchical_clustering_embeddings(

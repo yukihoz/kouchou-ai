@@ -109,7 +109,7 @@ def hierarchical_aggregation(config):
             "comment-id",
             "comment-body",
                 "arg_id",
-            "argument"
+            "argument",
             "category_id",
             "category"
         ]]
