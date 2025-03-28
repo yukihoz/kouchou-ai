@@ -1,8 +1,9 @@
 'use client'
 
-import {HStack, Image} from '@chakra-ui/react'
+import {HStack} from '@chakra-ui/react'
 import {BroadlisteningGuide} from '@/components/report/BroadlisteningGuide'
 import {Meta} from '@/type'
+import {ImageFromServer} from './ui/image-from-server'
 
 type Props = {
   meta: Meta | null
@@ -14,8 +15,8 @@ export function Header({meta}: Props) {
       <HStack>
         {meta && (
           <>
-            <Image
-              src={`${process.env.NEXT_PUBLIC_API_BASEPATH}/meta/reporter.png`}
+            <ImageFromServer
+              src={'/meta/reporter.png'}
               mx={'auto'}
               objectFit={'cover'}
               maxH={{base: '40px', md: '60px'}}
