@@ -13,6 +13,11 @@ up:
 down:
 	docker compose down
 
+client-build-static:
+	docker compose up -d api
+	cd client && npm run build:static
+	docker compose down
+
 client-setup:
 	cd client && npm install && cp .env-sample .env
 	cd client-admin && npm install && cp .env-sample .env

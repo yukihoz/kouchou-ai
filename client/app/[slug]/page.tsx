@@ -10,6 +10,7 @@ import {Separator} from '@chakra-ui/react'
 import {Metadata} from 'next'
 import {getApiBaseUrl} from '../utils/api'
 import {notFound} from 'next/navigation'
+import { Analysis } from '@/components/report/Analysis'
 
 type PageProps = {
   params: Promise<{
@@ -80,8 +81,6 @@ export default async function Page({params}: PageProps) {
     notFound()
   }
 
-  const contentLength = resultResponse.headers.get('Content-Length')
-  const resultSize = contentLength ? parseInt(contentLength, 10) : 0
   const meta: Meta = await metaResponse.json()
   const result: Result = await resultResponse.json()
 
@@ -90,11 +89,11 @@ export default async function Page({params}: PageProps) {
       <div className={'container'}>
         <Header meta={meta}/>
         <Overview result={result}/>
-        <ClientContainer resultSize={resultSize} reportName={slug}>
-          {result.clusters.filter(c => c.level === 1).map(c => (
-            <ClusterOverview key={c.id} cluster={c}/>
-          ))}
-        </ClientContainer>
+        <ClientContainer result={result}/>
+        {result.clusters.filter(c => c.level === 1).map(c => (
+          <ClusterOverview key={c.id} cluster={c}/>
+        ))}
+        <Analysis result={result}/>
         <BackButton/>
         <Separator my={12} maxW={'750px'} mx={'auto'}/>
         <About meta={meta}/>
