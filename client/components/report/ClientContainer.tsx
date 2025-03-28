@@ -1,33 +1,22 @@
 'use client'
 
 import {Chart} from '@/components/report/Chart'
-import {Analysis} from '@/components/report/Analysis'
-import React, {PropsWithChildren, useEffect, useState} from 'react'
-import {Skeleton} from '@/components/ui/skeleton'
+import React, {useState} from 'react'
 import {Cluster, Result} from '@/type'
-import {LoadingBar} from '@/components/report/LoadingBar'
 import {SelectChartButton} from '@/components/charts/SelectChartButton'
 import {DensityFilterSettingDialog} from '@/components/report/DensityFilterSettingDialog'
-import {getApiBaseUrl} from '@/app/utils/api'
 
 type Props = {
-  reportName: string
-  resultSize: number
+  result: Result
 }
 
-export function ClientContainer({reportName, resultSize, children}: PropsWithChildren<Props>) {
-  const [loadedSize, setLoadedSize] = useState(0)
-  const [result, setResult] = useState<Result>()
-  const [filteredResult, setFilteredResult] = useState<Result>()
+export function ClientContainer({result}: Props) {
+  const [filteredResult, setFilteredResult] = useState<Result>(result)
   const [openDensityFilterSetting, setOpenDensityFilterSetting] = useState(false)
   const [selectedChart, setSelectedChart] = useState('scatterAll')
   const [maxDensity, setMaxDensity] = useState(0.2)
   const [minValue, setMinValue] = useState(5)
   const [isFullscreen, setIsFullscreen] = useState(false)
-
-  useEffect(() => {
-    fetchReport()
-  }, [])
 
   function updateFilteredResult(maxDensity: number, minValue: number) {
     if (!result) return
@@ -49,47 +38,6 @@ export function ClientContainer({reportName, resultSize, children}: PropsWithChi
     }
   }
 
-  async function fetchReport() {
-    const response = await fetch(getApiBaseUrl() + `/reports/${reportName}`, {
-      headers: {
-        'x-api-key': process.env.NEXT_PUBLIC_PUBLIC_API_KEY || '',
-        'Content-Type': 'application/json'
-      }
-    })
-    const reader = response.body?.getReader()
-    let loaded = 0
-    if (reader) {
-      const chunks: Uint8Array[] = []
-      while (true) {
-        const {done, value} = await reader.read()
-        if (done) break
-        chunks.push(value)
-        loaded += value.length
-        setLoadedSize(loaded)
-      }
-      const concatenatedChunks = new Uint8Array(loaded)
-      let position = 0
-      for (const chunk of chunks) {
-        concatenatedChunks.set(chunk, position)
-        position += chunk.length
-      }
-      const result = new TextDecoder('utf-8').decode(concatenatedChunks)
-      const r: Result = JSON.parse(result)
-      setResult(r)
-      setFilteredResult(r)
-    }
-  }
-
-  if (!result || !filteredResult) {
-    return (
-      <>
-        <LoadingBar loaded={loadedSize} max={resultSize}/>
-        <Skeleton height="534px" mb={5} mx={'auto'} w={'100%'} maxW={'1200px'}/>
-        {children}
-        <LoadingBar loaded={loadedSize} max={resultSize}/>
-      </>
-    )
-  }
   return (
     <>
       {openDensityFilterSetting && (
@@ -128,8 +76,6 @@ export function ClientContainer({reportName, resultSize, children}: PropsWithChi
           setIsFullscreen(false)
         }}
       />
-      {children}
-      <Analysis result={result}/>
     </>
   )
 }
