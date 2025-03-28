@@ -49,7 +49,7 @@ async def create_report(report: ReportInput, api_key: str = Depends(verify_admin
     """
     try:
         launch_report_generation(report)
-        
+
         return ORJSONResponse(
             content=None,
             headers={

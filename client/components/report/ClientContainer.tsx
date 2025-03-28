@@ -29,7 +29,9 @@ export function ClientContainer({reportName, resultSize, children}: PropsWithChi
 
   useEffect(() => {
     fetchReport()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])  
+  
 
   function updateFilteredResult(maxDensity: number, minValue: number) {
     if (!result) return

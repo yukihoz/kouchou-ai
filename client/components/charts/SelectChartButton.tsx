@@ -1,6 +1,6 @@
 import {RadioCardItem, RadioCardRoot} from '@/components/ui/radio-card'
 import {Button, HStack, Icon, useBreakpointValue} from '@chakra-ui/react'
-import {ChartScatterIcon, CogIcon, FullscreenIcon, MessageCircleWarningIcon, SquareSquareIcon, DownloadIcon} from 'lucide-react'
+import {ChartScatterIcon, CogIcon, FullscreenIcon, MessageCircleWarningIcon, SquareSquareIcon} from 'lucide-react'
 import React from 'react'
 import {Tooltip} from '@/components/ui/tooltip'
 
