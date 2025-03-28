@@ -13,8 +13,8 @@ async function copyImages() {
   try {
     await fs.mkdir(destDir, { recursive: true })
 
-    const defaultFiles = await fs.readdir(defaultDir)
-    const customFiles = await fs.readdir(customDir)
+    const defaultFiles = (await fs.readdir(defaultDir)).filter(file => file.endsWith('.png'))
+    const customFiles = (await fs.readdir(customDir)).filter(file => file.endsWith('.png'))
 
     await Promise.all(
       defaultFiles.map(async (file) => {

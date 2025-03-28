@@ -1,12 +1,12 @@
 import {Provider} from '@/components/ui/provider'
 import './global.css'
-import {getImageSrcFromServer} from '@/components/ui/image-from-server'
+import {getImageFromServerSrc} from '@/app/utils/image-src'
 
 export default function RootLayout({children}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html suppressHydrationWarning lang={'ja'}>
       <head>
-        <link rel={'icon'} href={getImageSrcFromServer('/meta/icon.png')} sizes={'any'}/>
+        <link rel={'icon'} href={getImageFromServerSrc('/meta/icon.png')} sizes={'any'}/>
       </head>
       <body>
         <Provider>
