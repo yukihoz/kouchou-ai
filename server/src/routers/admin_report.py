@@ -49,12 +49,7 @@ async def create_report(report: ReportInput, api_key: str = Depends(verify_admin
     """
     try:
         launch_report_generation(report)
-        # if report.is_pubcom:
-        #     return FileResponse(
-        #     path = f"{ROOT_DIR}/server/broadlistening/pipeline/outputs/{report.input}/final_result_with_comments.csv",
-        #     media_type="text/csv",
-        #     filename="final_result_with_comments.csv"
-        #     )
+        
         return ORJSONResponse(
             content=None,
             headers={

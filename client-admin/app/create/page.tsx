@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react'
 import { FileUploadDropzone, FileUploadList, FileUploadRoot } from '@/components/ui/file-upload'
 import { useState } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { StepperInput } from '@/components/ui/stepper-input'
 import { parseCsv, CsvData } from '@/app/create/parseCsv'
 import { useRouter } from 'next/navigation'
@@ -64,7 +65,7 @@ export default function Page() {
   const [initialLabelling, setInitialLabelling] = useState<string>(initialLabellingPrompt)
   const [mergeLabelling, setMergeLabelling] = useState<string>(mergeLabellingPrompt)
   const [overview, setOverview] = useState<string>(overviewPrompt)
-  const [isPubcomMode, setIsPubcomMode] = useState(false)
+  const [isPubcomMode, setIsPubcomMode] = useState<boolean>(true)
 
   // IDのバリデーション関数
   const isValidId = (id: string): boolean => {
@@ -484,30 +485,6 @@ export default function Page() {
               AI詳細設定 (オプション)
             </Button>
           </HStack>
-          <HStack justify={'flex-end'} w={'full'}>
-            <Button
-              variant={isPubcomMode ? 'solid' : 'outline'}
-              colorScheme="teal"
-              w={'200px'}
-              onClick={() => {
-                setIsPubcomMode(!isPubcomMode)
-                // TODO パブコメモード用のプロンプトを独自に作成した場合、パブコメモードボタン選択時にデフォルトを切り替える
-                // if (!isPubcomMode) {
-                //   setExtraction(pubcomExtraction)
-                //   setInitialLabelling(pubcomInitialLabelling)
-                //   setMergeLabelling(pubcomMergeLabelling)
-                //   setOverview(pubcomOverview)
-                // } else {
-                //   setExtraction(extractionPrompt)
-                //   setInitialLabelling(initialLabellingPrompt)
-                //   setMergeLabelling(mergeLabellingPrompt)
-                //   setOverview(overviewPrompt)
-                // }
-              }}
-            >
-              パブコメモード {isPubcomMode ? '✓' : ''}
-            </Button>
-          </HStack>
           <Presence present={open} w={'full'}>
             <VStack gap={10}>
               <Field.Root>
@@ -527,6 +504,21 @@ export default function Page() {
                   </Text>
                 )}
                 <Field.HelperText>英字小文字と数字とハイフンのみ(URLで利用されます)</Field.HelperText>
+              </Field.Root>
+              <Field.Root>
+                <Checkbox
+                  checked={isPubcomMode}
+                  onCheckedChange={(details) => {
+                    const { checked } = details
+                    if (checked === 'indeterminate') return
+                    setIsPubcomMode(checked)
+                  }}
+                >
+                パブコメモード
+                </Checkbox>
+                <Field.HelperText>
+                元のコメントと要約された意見をCSV形式で出力します。完成したCSVファイルはレポート一覧ページからダウンロードできます。
+                </Field.HelperText>
               </Field.Root>
               <Field.Root>
                 <Field.Label>意見グループ数</Field.Label>
