@@ -60,39 +60,39 @@ export function SelectChartButton({selected, onChange, onClickDensitySetting, on
         </HStack>
       </RadioCardRoot>
       <HStack>
-      {csvPath && (
-        <Tooltip content={'CSVファイルをダウンロード'} openDelay={0} closeDelay={0}>
-          <Button
-            onClick={async () => {
-              try {
-                const response = await fetch(getApiBaseUrl + `/get-csv/${csvPath}`, {
-                  headers: {
-                    'x-api-key': process.env.NEXT_PUBLIC_PUBLIC_API_KEY || '',
-                    'Content-Type': 'application/json'
+        {csvPath && (
+          <Tooltip content={'CSVファイルをダウンロード'} openDelay={0} closeDelay={0}>
+            <Button
+              onClick={async () => {
+                try {
+                  const response = await fetch(getApiBaseUrl + `/get-csv/${csvPath}`, {
+                    headers: {
+                      'x-api-key': process.env.NEXT_PUBLIC_PUBLIC_API_KEY || '',
+                      'Content-Type': 'application/json'
+                    }
+                  })
+                  if (!response.ok) {
+                    throw new Error('CSVダウンロード失敗')
                   }
-                })
-                if (!response.ok) {
-                  throw new Error('CSVダウンロード失敗')
+                  const blob = await response.blob()
+                  const url = window.URL.createObjectURL(blob)
+                  const link = document.createElement('a')
+                  link.href = url
+                  link.download = 'report.csv'
+                  link.click()
+                  window.URL.revokeObjectURL(url)
+                } catch (error) {
+                  console.error(error)
+                  alert('CSVのダウンロードに失敗しました')
                 }
-                const blob = await response.blob()
-                const url = window.URL.createObjectURL(blob)
-                const link = document.createElement('a')
-                link.href = url
-                link.download = 'report.csv'
-                link.click()
-                window.URL.revokeObjectURL(url)
-              } catch (error) {
-                console.error(error)
-                alert('CSVのダウンロードに失敗しました')
-              }
-            }}
-            variant={'outline'}
-            h={'50px'}
-          >
-            <Icon><DownloadIcon/></Icon>
-          </Button>
-        </Tooltip>
-      )}
+              }}
+              variant={'outline'}
+              h={'50px'}
+            >
+              <Icon><DownloadIcon/></Icon>
+            </Button>
+          </Tooltip>
+        )}
 
       </HStack>
 
