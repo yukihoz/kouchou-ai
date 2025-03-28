@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Security
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import ORJSONResponse, FileResponse
 from fastapi.security.api_key import APIKeyHeader
 from src.config import settings
 from src.schemas.admin_report import ReportInput
@@ -63,3 +63,13 @@ async def create_report(report: ReportInput, api_key: str = Depends(verify_admin
     except Exception as e:
         slogger.error(f"Exception: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.get("/get-csv/{slug}")
+async def get_csv(slug: str, api_key: str = Depends(verify_admin_api_key)):
+    # f"outputs/{config['output_dir']}/final_result_with_comments.csv"
+    csv_path = settings.REPORT_DIR / slug / "final_result_with_comments.csv"
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="CSV file not found")
+
+    return FileResponse(path=str(csv_path), media_type="text/csv", filename=f"kouchou_{slug}.csv")
