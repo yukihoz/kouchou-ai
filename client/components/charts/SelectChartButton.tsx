@@ -93,10 +93,6 @@ export function SelectChartButton({selected, onChange, onClickDensitySetting, on
             </Button>
           </Tooltip>
         )}
-
-      </HStack>
-
-      <HStack>
         <Tooltip content={'濃い意見グループ設定'} openDelay={0} closeDelay={0}>
           <Button
             onClick={onClickDensitySetting}
