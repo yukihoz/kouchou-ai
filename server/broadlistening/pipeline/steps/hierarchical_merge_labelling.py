@@ -68,7 +68,6 @@ def hierarchical_merge_labelling(config: dict) -> None:
     parent_child_df = _build_parent_child_mapping(merge_result_df, cluster_id_columns)
     melted_df = melted_df.merge(parent_child_df, on=["level", "id"], how="left")
     density_df = calculate_cluster_density(melted_df, config)
-    # breakpoint()
     density_df.to_csv(merge_path, index=False)
 
 

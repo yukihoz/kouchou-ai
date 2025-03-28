@@ -60,7 +60,7 @@ async def get_csv(
     return FileResponse(
         path=str(csv_path),
         media_type='text/csv',
-        filename='report.csv'
+        filename=f'kouchou_{slug}.csv'
     )
 
 @router.get("/test-error")

@@ -62,8 +62,7 @@ def hierarchical_aggregation(config):
     results["translations"] = _build_translations(config)
     # 属性情報のカラムは、元データに対して指定したカラムとclassificationするカテゴリを合わせたもの
     results["propertyMap"] = _build_property_map(arguments, hidden_properties_map, config)
-    # breakpoint()
-    # if not config['is_pubcom']:
+
     with open(f"outputs/{config['output_dir']}/hierarchical_overview.txt") as f:
         overview = f.read()
     print("overview")
@@ -109,15 +108,15 @@ def hierarchical_aggregation(config):
         final_df = final_df[[
             "comment-id",
             "comment-body",
-            "category_id",
-            "category",
-            "arg_id",
+                "arg_id",
             "argument"
+            "category_id",
+            "category"
         ]]
+        final_df = final_df.rename(columns={"comment-body": "original-comment"})
 
         # 保存
         final_df.to_csv(f"outputs/{config['output_dir']}/final_result_with_comments.csv", index=False)
-        breakpoint()
         results["csv_path"] = config['output_dir']
         # results["csv_path"] = f"outputs/{config['output_dir']}/final_result_with_comments.csv"
     with open(path, "w") as file:

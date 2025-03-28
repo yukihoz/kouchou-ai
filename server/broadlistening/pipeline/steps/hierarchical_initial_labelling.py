@@ -59,7 +59,6 @@ def hierarchical_initial_labelling(config: dict) -> None:
         }
     )
     print("end initial labelling")
-    # breakpoint()
     initial_clusters_argument_df.to_csv(path, index=False)
 
 
