@@ -115,7 +115,6 @@ def hierarchical_aggregation(config):
         # 保存
         final_df.to_csv(f"outputs/{config['output_dir']}/final_result_with_comments.csv", index=False)
         results["csv_path"] = config["output_dir"]
-        # results["csv_path"] = f"outputs/{config['output_dir']}/final_result_with_comments.csv"
     with open(path, "w") as file:
         json.dump(results, file, indent=2, ensure_ascii=False)
     # TODO: サンプリングロジックを実装したいが、現状は全件抽出

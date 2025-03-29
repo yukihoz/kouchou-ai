@@ -23,7 +23,6 @@ export type Result = {
   overview: string // 解析概要
   config: Config // 設定情報
   comment_num: number // コメント数
-  csv_path?: string // CSV ファイルのパス
 }
 
 type Argument = {

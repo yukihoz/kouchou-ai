@@ -28,11 +28,6 @@ import { extractionPrompt } from './extractionPrompt'
 import { initialLabellingPrompt } from '@/app/create/initialLabellingPrompt'
 import { mergeLabellingPrompt } from '@/app/create/mergeLabellingPrompt'
 import { overviewPrompt } from '@/app/create/overviewPrompt'
-// TODO パブコメモード用のプロンプトを独自に作成する？
-// import { extractionPrompt as pubcomExtraction } from './pubcom/extractionPrompt'
-// import { initialLabellingPrompt as pubcomInitialLabelling } from './pubcom/initialLabellingPrompt'
-// import { mergeLabellingPrompt as pubcomMergeLabelling } from './pubcom/mergeLabellingPrompt'
-// import { overviewPrompt as pubcomOverview } from './pubcom/overviewPrompt'
 import { ChevronRightIcon, DownloadIcon } from 'lucide-react'
 import { v4 } from 'uuid'
 

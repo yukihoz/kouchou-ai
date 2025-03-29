@@ -9,7 +9,6 @@ type Props = {
   onChange: (value: string) => void
   onClickDensitySetting: () => void
   onClickFullscreen: () => void
-  csvPath?: string
 }
 
 export function SelectChartButton({selected, onChange, onClickDensitySetting, onClickFullscreen}: Props) {

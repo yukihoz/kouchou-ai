@@ -32,21 +32,6 @@ async def get_reports(api_key: str = Depends(verify_admin_api_key)) -> list[Repo
 
 @router.post("/admin/reports", status_code=202)
 async def create_report(report: ReportInput, api_key: str = Depends(verify_admin_api_key)):
-    """_summary_
-
-    Args:
-        report (ReportInput): _description_
-        api_key (str, optional): _description_. Defaults to Depends(verify_admin_api_key).
-
-    Raises:
-        HTTPException: _description_
-        HTTPException: _description_
-
-    Returns:
-        _type_: _description_
-    ```Sample Input
-
-    """
     try:
         launch_report_generation(report)
 
@@ -67,7 +52,6 @@ async def create_report(report: ReportInput, api_key: str = Depends(verify_admin
 
 @router.get("/get-csv/{slug}")
 async def get_csv(slug: str, api_key: str = Depends(verify_admin_api_key)):
-    # f"outputs/{config['output_dir']}/final_result_with_comments.csv"
     csv_path = settings.REPORT_DIR / slug / "final_result_with_comments.csv"
     if not csv_path.exists():
         raise HTTPException(status_code=404, detail="CSV file not found")
