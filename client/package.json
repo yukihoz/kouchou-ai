@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:static": "NEXT_PUBLIC_OUTPUT_MODE=export next build",
+    "build:static": "npm run copy && NEXT_PUBLIC_OUTPUT_MODE=export next build",
+    "copy": "node scripts/copy-image.mjs",
     "start": "next start",
     "start:static": "http-server out -p 3000",
     "lint": "next lint",
