@@ -1,4 +1,4 @@
-.PHONY: build up down client-setup client-dev client-dev-server client-admin-dev-server dummy-server azure-cli azure-login azure-build azure-push azure-deploy azure-info azure-config-update azure-cleanup azure-status azure-logs-client azure-logs-api azure-logs-admin azure-apply-policies prepare-yaml azure-save-env lint/server-check lint/server-format
+.PHONY: build up down client-build-static client-setup client-dev client-dev-server client-admin-dev-server dummy-server azure-cli azure-login azure-build azure-push azure-deploy azure-info azure-config-update azure-cleanup azure-status azure-logs-client azure-logs-api azure-logs-admin azure-apply-policies prepare-yaml azure-save-env lint/server-check lint/server-format
 
 ##############################################################################
 # ローカル開発環境のコマンド
@@ -14,8 +14,9 @@ down:
 	docker compose down
 
 client-build-static:
+	rm -rf out
 	docker compose up -d api
-	cd client && npm run build:static
+	docker compose run --rm -v $(shell pwd)/server:/server -v $(shell pwd)/out:/app/dist client sh -c "npm run build:static && cp -r out/* dist"
 	docker compose down
 
 client-setup:
