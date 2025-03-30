@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.responses import FileResponse, ORJSONResponse
 from fastapi.security.api_key import APIKeyHeader
@@ -52,8 +51,4 @@ async def download_comments_csv(slug: str, api_key: str = Depends(verify_admin_a
     csv_path = settings.REPORT_DIR / slug / "final_result_with_comments.csv"
     if not csv_path.exists():
         raise HTTPException(status_code=404, detail="CSV file not found")
-    return FileResponse(
-        path=str(csv_path),
-        media_type="text/csv",
-        filename=f"kouchou_{slug}.csv"
-    )
+    return FileResponse(path=str(csv_path), media_type="text/csv", filename=f"kouchou_{slug}.csv")
