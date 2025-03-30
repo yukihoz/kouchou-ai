@@ -20,13 +20,6 @@ export async function GET(request: Request) {
       isPubcom: true,
     },
     {
-      slug: 'example2',
-      status: 'ready',
-      title: '[テスト]テストデータその２：このデータは空です',
-      description: 'このデータは空です。詳細ページには飛べません',
-      isPubcom: false,
-    },
-    {
       slug: 'processing',
       status: 'processing',
       title: '[テスト]出力中のレポート',
