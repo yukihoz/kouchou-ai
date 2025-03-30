@@ -13,7 +13,7 @@ def hierarchical_clustering(config):
 
     dataset = config["output_dir"]
     path = f"outputs/{dataset}/hierarchical_clusters.csv"
-    arguments_df = pd.read_csv(f"outputs/{dataset}/args.csv")
+    arguments_df = pd.read_csv(f"outputs/{dataset}/args.csv", usecols=["arg-id", "argument"])
     embeddings_df = pd.read_pickle(f"outputs/{dataset}/embeddings.pkl")
     embeddings_array = np.asarray(embeddings_df["embedding"].values.tolist())
     cluster_nums = config["hierarchical_clustering"]["cluster_nums"]
@@ -41,7 +41,6 @@ def hierarchical_clustering(config):
     result_df = pd.DataFrame(
         {
             "arg-id": arguments_df["arg-id"],
-            "comment-id": arguments_df["comment-id"],
             "argument": arguments_df["argument"],
             "x": umap_embeds[:, 0],
             "y": umap_embeds[:, 1],

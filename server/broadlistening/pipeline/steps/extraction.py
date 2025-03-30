@@ -22,69 +22,60 @@ def _validate_property_columns(property_columns: list[str], comments: pd.DataFra
 def extraction(config):
     dataset = config["output_dir"]
     path = f"outputs/{dataset}/args.csv"
-    comments = pd.read_csv(f"inputs/{config['input']}.csv")
-
     model = config["extraction"]["model"]
     prompt = config["extraction"]["prompt"]
     workers = config["extraction"]["workers"]
     limit = config["extraction"]["limit"]
     property_columns = config["extraction"]["properties"]
-    is_pubcom = config.get("is_pubcom", False)
+
+    # カラム名だけを読み込み、必要なカラムが含まれているか確認する
+    comments = pd.read_csv(f"inputs/{config['input']}.csv", nrows=0)
     _validate_property_columns(property_columns, comments)
+    # エラーが出なかった場合、すべての行を読み込む
+    comments = pd.read_csv(
+        f"inputs/{config['input']}.csv", usecols=["comment-id", "comment-body"] + config["extraction"]["properties"]
+    )
     comment_ids = (comments["comment-id"].values)[:limit]
     comments.set_index("comment-id", inplace=True)
     results = pd.DataFrame()
     update_progress(config, total=len(comment_ids))
 
-    existing_arguments = set()
+    argument_map = {}
+    relation_rows = []
 
-    if is_pubcom:
-        # パブコメモード: argumentごとに全てのcomment-idをリストとして保持
-        argument_map = {}
-        for i in tqdm(range(0, len(comment_ids), workers)):
-            batch = comment_ids[i : i + workers]
-            batch_inputs = [comments.loc[id]["comment-body"] for id in batch]
-            batch_results = extract_batch(batch_inputs, prompt, model, workers)
-            for comment_id, extracted_args in zip(batch, batch_results, strict=False):
-                for arg in extracted_args:
-                    if arg not in argument_map:
-                        argument_map[arg] = {"comment_ids": set()}
-                    argument_map[arg]["comment_ids"].add(comment_id)
-            update_progress(config, incr=len(batch))
+    for i in tqdm(range(0, len(comment_ids), workers)):
+        batch = comment_ids[i : i + workers]
+        batch_inputs = [comments.loc[id]["comment-body"] for id in batch]
+        batch_results = extract_batch(batch_inputs, prompt, model, workers)
 
-        rows = []
-        for idx, (arg, data) in enumerate(argument_map.items()):
-            rows.append(
-                {
-                    "arg-id": f"A{idx}",
-                    "argument": arg,
-                    "comment-id": list(data["comment_ids"]),
+        for comment_id, extracted_args in zip(batch, batch_results, strict=False):
+            for j, arg in enumerate(extracted_args):
+                if arg not in argument_map:
+                    # argumentテーブルに追加
+                    arg_id = f"A{comment_id}_{j}"
+                    argument_map[arg] = {
+                        "arg-id": arg_id,
+                        "argument": arg,
+                    }
+                else:
+                    arg_id = argument_map[arg]["arg-id"]
+
+                # relationテーブルに comment とその property を追加
+                relation_row = {
+                    "arg-id": arg_id,
+                    "comment-id": comment_id,
                 }
-            )
+                for prop in property_columns:
+                    relation_row[prop] = comments.loc[comment_id][prop]
+                relation_rows.append(relation_row)
 
-        results = pd.DataFrame(rows)
+        update_progress(config, incr=len(batch))
 
-    else:
-        # 通常の処理: argumentごとにcomment-idは一つのみ
-        for i in tqdm(range(0, len(comment_ids), workers)):
-            batch = comment_ids[i : i + workers]
-            batch_inputs = [comments.loc[id]["comment-body"] for id in batch]
-            batch_results = extract_batch(batch_inputs, prompt, model, workers)
-            for comment_id, extracted_args in zip(batch, batch_results, strict=False):
-                for j, arg in enumerate(extracted_args):
-                    if arg not in existing_arguments:
-                        properties = {prop: comments.loc[comment_id][prop] for prop in property_columns}
-                        new_row = {
-                            "arg-id": f"A{comment_id}_{j}",
-                            "comment-id": comment_id,
-                            "argument": arg,
-                            # "source": comments.loc[comment_id]["source"],
-                            **properties,
-                        }
-                        results = pd.concat([results, pd.DataFrame([new_row])], ignore_index=True)
-                        existing_arguments.add(arg)
-            update_progress(config, incr=len(batch))
-    if results.shape == (0, 0):
+    # DataFrame化
+    results = pd.DataFrame(argument_map.values())
+    relation_df = pd.DataFrame(relation_rows)
+
+    if results.empty:
         raise RuntimeError("result is empty, maybe bad prompt")
 
     classification_categories = config["extraction"]["categories"]
@@ -92,6 +83,8 @@ def extraction(config):
         results = classify_args(results, config, workers)
 
     results.to_csv(path, index=False)
+    # comment-idとarg-idの関係を保存
+    relation_df.to_csv(f"outputs/{dataset}/relations.csv", index=False)
 
 
 logging.basicConfig(level=logging.ERROR)

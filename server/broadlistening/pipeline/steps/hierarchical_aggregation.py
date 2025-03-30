@@ -1,6 +1,5 @@
 """Generate a convenient JSON output file."""
 
-import ast
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -47,6 +46,7 @@ def hierarchical_aggregation(config):
     arguments = pd.read_csv(f"outputs/{config['output_dir']}/args.csv")
     arguments.set_index("arg-id", inplace=True)
     arg_num = len(arguments)
+    relation_df = pd.read_csv(f"outputs/{config['output_dir']}/relations.csv")
     comments = pd.read_csv(f"inputs/{config['input']}.csv")
     clusters = pd.read_csv(f"outputs/{config['output_dir']}/hierarchical_clusters.csv")
     labels = pd.read_csv(f"outputs/{config['output_dir']}/hierarchical_merge_labels.csv")
@@ -75,7 +75,7 @@ def hierarchical_aggregation(config):
     # TODO: サンプリングロジックを実装したいが、現状は全件抽出
     create_custom_intro(config)
     if config["is_pubcom"]:
-        add_original_comments(labels, arguments, clusters, config)
+        add_original_comments(labels, arguments, relation_df, clusters, config)
 
 
 def create_custom_intro(config):
@@ -105,52 +105,44 @@ def create_custom_intro(config):
         json.dump(result, f, indent=2, ensure_ascii=False)
 
 
-def add_original_comments(labels, arguments, clusters, config):
+def add_original_comments(labels, arguments, relation_df, clusters, config):
     # 大カテゴリ（cluster-level-1）に該当するラベルだけ抽出
     labels_lv1 = labels[labels["level"] == 1][["id", "label"]].rename(
         columns={"id": "cluster-level-1-id", "label": "category_label"}
     )
 
-    # マージ処理
+    # arguments と clusters をマージ（カテゴリ情報付与）
     merged = arguments.merge(clusters[["arg-id", "cluster-level-1-id"]], on="arg-id").merge(
         labels_lv1, on="cluster-level-1-id", how="left"
     )
 
-    # 必要なカラムのみ抽出・整形
-    merged["comment-id"] = merged["comment-id"].apply(
-        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
-    )  # 文字列→リストに変換
-    merged["comment-id"] = merged["comment-id"].apply(lambda ids: [str(i) for i in ids])  # 文字列型IDに統一
+    # relation_df と結合
+    merged = merged.merge(relation_df, on="arg-id", how="left")
 
-    merged = merged[["cluster-level-1-id", "category_label", "arg-id", "argument", "comment-id"]].rename(
+    # 元コメント取得
+    comments = pd.read_csv(f"inputs/{config['input']}.csv")
+    comments["comment-id"] = comments["comment-id"].astype(str)
+    merged["comment-id"] = merged["comment-id"].astype(str)
+
+    # 元コメント本文などとマージ
+    final_df = merged.merge(comments, on="comment-id", how="left")
+
+    # 必要カラムのみ整形
+    final_cols = ["comment-id", "comment-body", "arg-id", "argument", "cluster-level-1-id", "category_label"]
+    for col in ["source", "url"]:
+        if col in comments.columns:
+            final_cols.append(col)
+
+    final_df = final_df[final_cols]
+    final_df = final_df.rename(
         columns={
             "cluster-level-1-id": "category_id",
             "category_label": "category",
             "arg-id": "arg_id",
             "argument": "argument",
-            "comment-id": "comment_ids",
+            "comment-body": "original-comment",
         }
     )
-
-    # まず merged の comment_ids を explode で展開
-    exploded = merged.explode("comment_ids").rename(columns={"comment_ids": "comment-id"})
-
-    comments = pd.read_csv(f"inputs/{config['input']}.csv")
-
-    # comment-id を結合用に文字列型に揃える
-    exploded["comment-id"] = exploded["comment-id"].astype(str)
-    comments["comment-id"] = comments["comment-id"].astype(str)
-
-    # comments とマージ（左：exploded, 右：元コメント）
-    final_df = exploded.merge(comments, on="comment-id", how="left")
-
-    final_cols = ["comment-id", "comment-body", "arg_id", "argument", "category_id", "category"]
-    for col in ["source", "url"]:
-        if col in comments.columns:
-            final_cols.append(col)
-    # カラム順を整理
-    final_df = final_df[final_cols]
-    final_df = final_df.rename(columns={"comment-body": "original-comment"})
 
     # 保存
     final_df.to_csv(f"outputs/{config['output_dir']}/final_result_with_comments.csv", index=False)
@@ -167,7 +159,6 @@ def _build_arguments(clusters: pd.DataFrame) -> list[Argument]:
         argument: Argument = {
             "arg_id": row["arg-id"],
             "argument": row["argument"],
-            "comment_id": row["comment-id"],
             "x": row["x"],
             "y": row["y"],
             "p": 0,  # NOTE: 一旦全部0でいれる
