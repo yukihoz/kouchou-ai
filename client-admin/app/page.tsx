@@ -106,7 +106,7 @@ export default function Page() {
                           variant={'ghost'}
                           onClick={async () => {
                             try {
-                              const response = await fetch(getApiBaseUrl() + `/get-csv/${report.slug}`, {
+                              const response = await fetch(getApiBaseUrl() + `/admin/comments/${report.slug}/csv`, {
                                 headers: {
                                   'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
                                   'Content-Type': 'application/json'
