@@ -77,6 +77,7 @@ def hierarchical_aggregation(config):
     if config["is_pubcom"]:
         add_original_comments(labels, arguments, clusters, config)
 
+
 def create_custom_intro(config):
     dataset = config["output_dir"]
     args_path = f"outputs/{dataset}/args.csv"
@@ -102,6 +103,7 @@ def create_custom_intro(config):
     result["config"]["intro"] = custom_intro
     with open(result_path, "w") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
+
 
 def add_original_comments(labels, arguments, clusters, config):
     # 大カテゴリ（cluster-level-1）に該当するラベルだけ抽出
@@ -143,7 +145,7 @@ def add_original_comments(labels, arguments, clusters, config):
     final_df = exploded.merge(comments, on="comment-id", how="left")
 
     final_cols = ["comment-id", "comment-body", "arg_id", "argument", "category_id", "category"]
-    for col in ['source', 'url']:
+    for col in ["source", "url"]:
         if col in comments.columns:
             final_cols.append(col)
     # カラム順を整理
