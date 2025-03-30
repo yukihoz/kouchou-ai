@@ -65,8 +65,6 @@ def extraction(config):
                     "arg-id": arg_id,
                     "comment-id": comment_id,
                 }
-                for prop in property_columns:
-                    relation_row[prop] = comments.loc[comment_id][prop]
                 relation_rows.append(relation_row)
 
         update_progress(config, incr=len(batch))
