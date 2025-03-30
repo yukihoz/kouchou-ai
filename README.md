@@ -126,5 +126,10 @@ make client-dev -j 3
 広聴AIはOSSとして開発されており、開発者の方からのコントリビュートを募集しています。
 詳しくは、[CONTRIBUTING.md](CONTRIBUTING.md)を参照ください。
 
+## 機能要望・バグ報告について
+* githubアカウントをお持ちの方は、[Issue](https://github.com/digitaldemocracy2030/kouchou-ai/issues) にバグ・改善要望を投稿してください
+* githubアカウントをお持ちでない方は、以下のgoogle formよりバグ・改善要望を投稿してください
+  * [バグ報告・改善要望フォーム](https://docs.google.com/forms/d/e/1FAIpQLSf43rpi8N1hGQmECDOBOmiV3c-Buwf4gWSj2sYc2KbZL9NOBA/viewform?usp=dialog)
+
 ## クレジット
 このプロジェクトは、[AI Objectives Institute](https://www.aiobjectivesinstitute.org/) が開発した [Talk to the City](https://github.com/AIObjectives/talk-to-the-city-reports)を参考に開発されており、ライセンスに基づいてソースコードを一部活用し、機能追加や改善を実施しています。ここに原作者の貢献に感謝の意を表します。
