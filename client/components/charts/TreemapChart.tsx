@@ -19,14 +19,19 @@ export function TreemapChart({clusterList, argumentList}: Props) {
   const labels = list.map(node => node.label.replace(/(.{15})/g, '$1<br />'))
   const parents = list.map(node => node.parent)
   const values = list.map(node => node.value)
+  const customdata = list.map(node => node.takeaway.replace(/(.{15})/g, '$1<br />'))
   const data: Partial<PlotData & { maxdepth: number, pathbar: { thickness: number } }> = {
     type: 'treemap',
     ids: ids,
     labels: labels,
     parents: parents,
     values: values,
+    customdata: customdata,
     branchvalues: 'total',
-    hovertemplate: '<b>%{label}</b><br>%{value:,}件<br>%{percentEntry:.2%}<extra></extra>',
+    hovertemplate: '%{customdata}<extra></extra>',
+    hoverlabel: {
+      align: 'left',
+    },
     texttemplate: '%{label}<br>%{value:,}件<br>%{percentEntry:.2%}',
     maxdepth: 2,
     pathbar: {
