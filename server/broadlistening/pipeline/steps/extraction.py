@@ -60,7 +60,7 @@ def extraction(config):
                 else:
                     arg_id = argument_map[arg]["arg-id"]
 
-                # relationテーブルに comment とその property を追加
+                # relationテーブルにcommentとargの関係を追加
                 relation_row = {
                     "arg-id": arg_id,
                     "comment-id": comment_id,
