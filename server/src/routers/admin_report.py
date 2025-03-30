@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Security
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import FileResponse, ORJSONResponse
 from fastapi.security.api_key import APIKeyHeader
 from src.config import settings
 from src.schemas.admin_report import ReportInput
@@ -30,6 +30,7 @@ async def get_reports(api_key: str = Depends(verify_admin_api_key)) -> list[Repo
 async def create_report(report: ReportInput, api_key: str = Depends(verify_admin_api_key)):
     try:
         launch_report_generation(report)
+
         return ORJSONResponse(
             content=None,
             headers={
@@ -43,3 +44,11 @@ async def create_report(report: ReportInput, api_key: str = Depends(verify_admin
     except Exception as e:
         slogger.error(f"Exception: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.get("/admin/comments/{slug}/csv")
+async def download_comments_csv(slug: str, api_key: str = Depends(verify_admin_api_key)):
+    csv_path = settings.REPORT_DIR / slug / "final_result_with_comments.csv"
+    if not csv_path.exists():
+        raise HTTPException(status_code=404, detail="CSV file not found")
+    return FileResponse(path=str(csv_path), media_type="text/csv", filename=f"kouchou_{slug}.csv")
