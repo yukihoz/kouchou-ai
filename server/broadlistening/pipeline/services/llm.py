@@ -13,6 +13,26 @@ from openai import AzureOpenAI
 DOTENV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../.env"))
 load_dotenv(DOTENV_PATH)
 
+# check env
+use_azure = os.getenv("USE_AZURE", "false").lower()
+if use_azure == "true":
+    if not os.getenv("AZURE_CHATCOMPLETION_ENDPOINT"):
+        raise RuntimeError("AZURE_CHATCOMPLETION_ENDPOINT environment variable is not set")
+    if not os.getenv("AZURE_CHATCOMPLETION_DEPLOYMENT_NAME"):
+        raise RuntimeError("AZURE_CHATCOMPLETION_DEPLOYMENT_NAME environment variable is not set")
+    if not os.getenv("AZURE_CHATCOMPLETION_API_KEY"):
+        raise RuntimeError("AZURE_CHATCOMPLETION_API_KEY environment variable is not set")
+    if not os.getenv("AZURE_CHATCOMPLETION_VERSION"):
+        raise RuntimeError("AZURE_CHATCOMPLETION_VERSION environment variable is not set")
+    if not os.getenv("AZURE_EMBEDDING_ENDPOINT"):
+        raise RuntimeError("AZURE_EMBEDDING_ENDPOINT environment variable is not set")
+    if not os.getenv("AZURE_EMBEDDING_API_KEY"):
+        raise RuntimeError("AZURE_EMBEDDING_API_KEY environment variable is not set")
+    if not os.getenv("AZURE_EMBEDDING_VERSION"):
+        raise RuntimeError("AZURE_EMBEDDING_VERSION environment variable is not set")
+    if not os.getenv("AZURE_EMBEDDING_DEPLOYMENT_NAME"):
+        raise RuntimeError("AZURE_EMBEDDING_DEPLOYMENT_NAME environment variable is not set")
+
 
 def request_to_openai(
     messages: list[dict],
@@ -41,7 +61,6 @@ def request_to_azure_chatcompletion(
     deployment = os.getenv("AZURE_CHATCOMPLETION_DEPLOYMENT_NAME")
     api_key = os.getenv("AZURE_CHATCOMPLETION_API_KEY")
     api_version = os.getenv("AZURE_CHATCOMPLETION_VERSION")
-    assert azure_endpoint and deployment and api_key and api_version
 
     client = AzureOpenAI(
         api_version=api_version,
@@ -106,7 +125,6 @@ def request_to_azure_embed(args, model):
     api_key = os.getenv("AZURE_EMBEDDING_API_KEY")
     api_version = os.getenv("AZURE_EMBEDDING_VERSION")
     deployment = os.getenv("AZURE_EMBEDDING_DEPLOYMENT_NAME")
-    assert azure_endpoint and deployment and api_key and api_version
 
     client = AzureOpenAI(
         api_version=api_version,
