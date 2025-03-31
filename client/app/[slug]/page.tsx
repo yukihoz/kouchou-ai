@@ -58,9 +58,10 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
     return {
       title: `${result.config.question} - ${meta.reporter}`,
       description: `${result.overview}`,
-      openGraph: {
-        images: [getApiBaseUrl() + '/meta/ogp.png'],
-      },
+      metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+      // openGraph: {
+      //   images: [getApiBaseUrl() + '/meta/ogp.png'],
+      // },
     }
   } catch (_e) {
     return {}
