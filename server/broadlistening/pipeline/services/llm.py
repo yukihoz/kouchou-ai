@@ -33,6 +33,7 @@ if use_azure == "true":
     if not os.getenv("AZURE_EMBEDDING_DEPLOYMENT_NAME"):
         raise RuntimeError("AZURE_EMBEDDING_DEPLOYMENT_NAME environment variable is not set")
 
+
 def request_to_openai(
     messages: list[dict],
     model: str = "gpt-4",
