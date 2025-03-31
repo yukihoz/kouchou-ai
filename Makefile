@@ -80,13 +80,6 @@ azure-setup:
 	    echo '>>> 設定されたACR名を.env.azureに保存しています...' && \
 	    echo 'AZURE_ACR_NAME=$(AZURE_ACR_NAME)' > /workspace/.env.azure.generated"
 
-# ACRにログイン（トークンを表示）
-azure-acr-login:
-	docker run -it --rm -v $(shell pwd):/workspace -v $(HOME)/.azure:/root/.azure -w /workspace mcr.microsoft.com/azure-cli /bin/bash -c "\
-	    echo '以下のトークンでDockerログインしてください:' && \
-	    token=\$$(az acr login --name kouchouairegistry --expose-token --query accessToken -o tsv) && \
-	    echo \"docker login kouchouairegistry.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password \$$token\""
-
 # ACRに自動ログイン
 azure-acr-login-auto:
 	$(call read-env)
