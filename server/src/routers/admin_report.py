@@ -1,16 +1,19 @@
+import asyncio
+import json
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Security
-from fastapi.responses import FileResponse, ORJSONResponse
+from fastapi.responses import FileResponse, ORJSONResponse, StreamingResponse
 from fastapi.security.api_key import APIKeyHeader
 from src.config import settings
 from src.schemas.admin_report import ReportInput
-from src.schemas.report import Report
+from src.schemas.report import Report, ReportStatus
 from src.services.report_launcher import launch_report_generation
 from src.services.report_status import load_status_as_reports
 from src.utils.logger import setup_logger
 
 slogger = setup_logger()
 router = APIRouter()
-
 
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 
@@ -30,7 +33,6 @@ async def get_reports(api_key: str = Depends(verify_admin_api_key)) -> list[Repo
 async def create_report(report: ReportInput, api_key: str = Depends(verify_admin_api_key)):
     try:
         launch_report_generation(report)
-
         return ORJSONResponse(
             content=None,
             headers={
@@ -52,3 +54,20 @@ async def download_comments_csv(slug: str, api_key: str = Depends(verify_admin_a
     if not csv_path.exists():
         raise HTTPException(status_code=404, detail="CSV file not found")
     return FileResponse(path=str(csv_path), media_type="text/csv", filename=f"kouchou_{slug}.csv")
+
+
+@router.get("/admin/reports/{slug}/status/step-json", dependencies=[Depends(verify_admin_api_key)])
+async def get_current_step(slug: str):
+    status_file = settings.REPORT_DIR / slug / "hierarchical_status.json"
+    try:
+        with open(status_file) as f:
+            status = json.load(f)
+        # 全体のステータスが "completed" なら、current_step も "completed" とする
+        if status.get("status") == "completed":
+            return {"current_step": "completed"}
+        # current_job キーが存在しない場合も完了とみなす
+        if "current_job" not in status:
+            return {"current_step": "completed"}
+        return {"current_step": status.get("current_job", "unknown")}
+    except Exception as e:
+        return {"current_step": "error"}
