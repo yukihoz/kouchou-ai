@@ -1,13 +1,11 @@
-import asyncio
 import json
-import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Security
-from fastapi.responses import FileResponse, ORJSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, ORJSONResponse
 from fastapi.security.api_key import APIKeyHeader
 from src.config import settings
 from src.schemas.admin_report import ReportInput
-from src.schemas.report import Report, ReportStatus
+from src.schemas.report import Report
 from src.services.report_launcher import launch_report_generation
 from src.services.report_status import load_status_as_reports
 from src.utils.logger import setup_logger
@@ -69,5 +67,5 @@ async def get_current_step(slug: str):
         if "current_job" not in status:
             return {"current_step": "completed"}
         return {"current_step": status.get("current_job", "unknown")}
-    except Exception as e:
+    except Exception:
         return {"current_step": "error"}
