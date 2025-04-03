@@ -8,6 +8,12 @@ import pandas as pd
 from src.config import settings
 from src.schemas.admin_report import ReportInput
 from src.services.report_status import add_new_report_to_status, set_status
+from src.services.report_sync import ReportSyncService
+from src.utils.logger import setup_logger
+
+logger = setup_logger()
+
+_report_sync_service = ReportSyncService()
 
 
 def _build_config(report_input: ReportInput) -> dict[str, Any]:
@@ -88,7 +94,13 @@ def _monitor_process(process: subprocess.Popen, slug: str) -> None:
     """
     retcode = process.wait()
     if retcode == 0:
+        # レポート生成成功時、ステータスを更新
         set_status(slug, "ready")
+
+        logger.info(f"Syncing report files for {slug} to storage")
+        _report_sync_service.sync_report_files_to_storage(slug)
+        _report_sync_service.sync_status_file_to_storage()
+
     else:
         set_status(slug, "error")
 
@@ -107,4 +119,5 @@ def launch_report_generation(report_input: ReportInput) -> None:
         threading.Thread(target=_monitor_process, args=(process, report_input.input), daemon=True).start()
     except Exception as e:
         set_status(report_input.input, "error")
+        logger.error(f"Error launching report generation: {e}")
         raise e
