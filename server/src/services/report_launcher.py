@@ -14,8 +14,6 @@ from src.utils.logger import setup_logger
 
 logger = setup_logger()
 
-_report_sync_service = ReportSyncService()
-
 
 def _build_config(report_input: ReportInput) -> dict[str, Any]:
     comment_num = len(report_input.comments)
@@ -100,8 +98,9 @@ def _monitor_process(process: subprocess.Popen, slug: str) -> None:
         set_status(slug, "ready")
 
         logger.info(f"Syncing report files for {slug} to storage")
-        _report_sync_service.sync_report_files_to_storage(slug)
-        _report_sync_service.sync_status_file_to_storage()
+        report_sync_service = ReportSyncService()
+        report_sync_service.sync_report_files_to_storage(slug)
+        report_sync_service.sync_status_file_to_storage()
 
     else:
         set_status(slug, "error")

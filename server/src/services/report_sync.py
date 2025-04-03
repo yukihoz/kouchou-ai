@@ -1,3 +1,5 @@
+import json
+
 from src.config import settings
 from src.services.storage import get_storage_service
 from src.utils.logger import setup_logger
@@ -40,6 +42,14 @@ class ReportSyncService:
         Returns:
             bool: ダウンロードに成功した場合はTrue、失敗した場合はFalse
         """
+        # 予期せぬ上書きを避けるため、statusファイルが存在し中身が空でない場合はダウンロードをスキップする
+        if self.LOCAL_STATUS_FILE_PATH.exists() and self.LOCAL_STATUS_FILE_PATH.stat().st_size > 0:
+            with open(self.LOCAL_STATUS_FILE_PATH) as f:
+                report_status = json.load(f)
+            if report_status:  # データが存在する場合はスキップ
+                logger.info("Status file already exists and is not empty, skipping download")
+                return True
+
         try:
             remote_status_file_path = f"{self.REMOTE_STATUS_FILE_PREFIX}/report_status.json"
             self.storage_service.download_file(remote_status_file_path, str(self.LOCAL_STATUS_FILE_PATH))

@@ -23,9 +23,7 @@ class Settings(BaseSettings):
 
     # ストレージ設定
     STORAGE_TYPE: StorageType = Field(env="STORAGE_TYPE", default="local")
-    STORAGE_CONTAINER_NAME: str | None = Field(env="AZURE_BLOB_STORAGE_CONTAINER_NAME", default=None)
     AZURE_BLOB_STORAGE_ACCOUNT_NAME: str | None = Field(env="AZURE_BLOB_STORAGE_ACCOUNT_NAME", default=None)
-    AZURE_BLOB_STORAGE_CONNECTION_STRING: str | None = Field(env="AZURE_STORAGE_CONNECTION_STRING", default=None)
     AZURE_BLOB_STORAGE_CONTAINER_NAME: str | None = Field(env="AZURE_BLOB_STORAGE_CONTAINER_NAME", default=None)
 
     @property
