@@ -1,4 +1,3 @@
-
 from src.config import settings
 from src.services.storage import get_storage_service
 from src.utils.logger import setup_logger
@@ -61,7 +60,7 @@ class ReportSyncService:
             self.storage_service.download_directory(
                 str(self.REMOTE_REPORT_DIR_PREFIX),
                 str(settings.REPORT_DIR),
-                target_suffix_list=["json"],
+                target_suffixes=("json",),
             )
             return True
         except FileNotFoundError:

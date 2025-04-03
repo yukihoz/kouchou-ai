@@ -1,4 +1,3 @@
-import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -6,9 +5,11 @@ from pathlib import Path
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
-from src.config import settings
 
-logger = logging.getLogger(__name__)
+from src.config import settings
+from src.utils.logger import setup_logger
+
+logger = setup_logger()
 
 
 class StorageService(ABC):
@@ -40,9 +41,7 @@ class StorageService(ABC):
         pass
 
     @abstractmethod
-    def download_directory(
-        self, remote_dir_prefix: str, local_dir_path: str, target_suffix_list: list[str] | None = None
-    ):
+    def download_directory(self, remote_dir_prefix: str, local_dir_path: str, target_suffixes: tuple[str, ...] = ()):
         """ストレージから指定プレフィックスに一致するファイル群をディレクトリとしてダウンロードする
 
         Args:
@@ -52,15 +51,13 @@ class StorageService(ABC):
         pass
 
     @abstractmethod
-    def upload_directory(
-        self, local_dir_path: str, remote_dir_prefix: str, target_suffix_list: list[str] | None = None
-    ):
+    def upload_directory(self, local_dir_path: str, remote_dir_prefix: str, target_suffixes: tuple[str, ...] = ()):
         """ローカルディレクトリをストレージにアップロードする
 
         Args:
             local_dir_path: アップロードするローカルディレクトリのパス
             remote_dir_prefix: ストレージ上の保存先プレフィックス
-            target_suffix_list: アップロード対象とするファイルの拡張子リスト（省略可能）
+            target_suffixes: アップロード対象とするファイルの拡張子リスト（省略可能）
         """
         pass
 
@@ -91,21 +88,24 @@ class LocalStorageService(StorageService):
         logger.debug(f"LocalStorageService: download_file は何もしません - {remote_path} -> {local_path}")
 
     def download_directory(
-        self, remote_dir_prefix: str, local_dir_path: str, target_suffix_list: list[str] | None = None
+        self, remote_dir_prefix: str, local_dir_path: str, target_suffixes: tuple[str, ...] = ()
     ) -> None:
         """ローカルストレージの場合はファイル一覧取得は不要
 
         Args:
             remote_dir_prefix: ダウンロード対象のディレクトリプレフィックス
             local_dir_path: ダウンロード先のローカルディレクトリパス
-            target_suffix_list: ダウンロード対象とするファイルの拡張子リスト（省略可能）
+            target_suffixes: ダウンロード対象とするファイルの拡張子リスト（省略可能）
         """
         logger.debug(
             f"LocalStorageService: download_directory は何もしません - {remote_dir_prefix} -> {local_dir_path}"
         )
 
     def upload_directory(
-        self, local_dir_path: str, remote_dir_prefix: str, target_suffix_list: list[str] | None = None
+        self,
+        local_dir_path: str,
+        remote_dir_prefix: str,
+        target_suffixes: tuple[str, ...] = (),  # noqa: B006
     ) -> None:
         """ディレクトリをストレージにアップロードする
 
@@ -114,7 +114,7 @@ class LocalStorageService(StorageService):
         Args:
             local_dir_path: アップロード元のローカルディレクトリパス（文字列）
             remote_dir_prefix: アップロード先のディレクトリプレフィックス（文字列）
-            target_suffix_list: アップロード対象とするファイルの拡張子リスト（省略可能）
+            target_suffixes: アップロード対象とするファイルの拡張子リスト（省略可能）
         """
         logger.debug(f"LocalStorageService: upload_directory は何もしません - {local_dir_path} -> {remote_dir_prefix}")
 
@@ -139,21 +139,21 @@ class AzureBlobStorageService(StorageService):
             settings.AZURE_BLOB_STORAGE_CONTAINER_NAME
         )
 
-    def _has_target_suffix(self, blob_path: str, target_suffix_list: list[str] | None) -> bool:
+    def _has_target_suffix(self, blob_path: str, target_suffixes: tuple[str, ...] = ()) -> bool:
         """指定されたsuffixで終わるファイルを判定する
 
         Args:
             blob_path: 判定対象のBlobパス（文字列）
-            target_suffix_list: 対象とする拡張子のリスト（Noneの場合は全てのファイルが対象）
+            target_suffixes: 対象とする拡張子のリスト（空の場合は全てのファイルが対象）
 
         Returns:
             bool: 指定された拡張子で終わる場合はTrue、それ以外はFalse
         """
-        if target_suffix_list is None:
+        if len(target_suffixes) == 0:
             return True
-        return any(blob_path.endswith(suffix) for suffix in target_suffix_list)
+        return any(blob_path.endswith(suffix) for suffix in target_suffixes)
 
-    def upload_file(self, local_file_path: str, remote_blob_path: str, skip_if_same: bool = True) -> None:
+    def upload_file(self, local_file_path: str, remote_blob_path: str, skip_if_same: bool = True) -> bool:
         """ファイルをストレージにアップロードする
 
         ローカルファイルをAzure Blob Storageにアップロードします。
@@ -183,28 +183,31 @@ class AzureBlobStorageService(StorageService):
                 blob_properties = blob_client.get_blob_properties()
                 remote_file_size = blob_properties.size
 
-                # サイズが同じ場合はスキップ（より厳密にするならハッシュ値も比較する）
+                # サイズが同じ場合はスキップ
                 if local_file_size == remote_file_size:
                     logger.info(
-                        f"Skipped upload for '{local_file_path}' - identical file already exists at '{remote_blob_path}'"
+                        f"同一ファイルが存在します。アップロードをスキップします。パス: '{local_file_path}' パス: '{remote_blob_path}'"
                     )
-                    return
+                    return True
 
             # ファイルをアップロード
             with open(local_file_path, "rb") as data:
                 blob_client.upload_blob(data, overwrite=True)
-            logger.info(f"Uploaded file '{local_file_path}' to blob '{remote_blob_path}'")
+            logger.info(f"ファイルをアップロードしました。パス: '{local_file_path}' パス: '{remote_blob_path}'")
+            return True
         except Exception as e:
-            logger.error(f"Failed to upload file '{local_file_path}' to blob '{remote_blob_path}': {str(e)}")
-            raise
+            logger.error(
+                f"ファイルのアップロードに失敗しました。パス: '{local_file_path}' パス: '{remote_blob_path}' エラー: {str(e)}"
+            )
+            return False
 
     def upload_directory(
         self,
         local_dir_path: str,
         remote_dir_prefix: str,
-        target_suffix_list: list[str] | None = None,
+        target_suffixes: tuple[str, ...] = (),
         skip_if_same: bool = True,
-    ) -> None:
+    ) -> bool:
         """ディレクトリをストレージにアップロードする
 
         ローカルディレクトリ内のファイルをAzure Blob Storageにアップロードします。
@@ -212,7 +215,7 @@ class AzureBlobStorageService(StorageService):
         Args:
             local_dir_path: アップロードするローカルディレクトリのパス（文字列）
             remote_dir_prefix: Azure Blob Storage上の保存先プレフィックス（文字列）
-            target_suffix_list: アップロード対象とするファイルの拡張子リスト（省略可能）
+            target_suffixes: アップロード対象とするファイルの拡張子リスト（省略可能）
                 指定された場合、リストに含まれる拡張子を持つファイルのみがアップロードされます
             skip_if_same: 同一ファイルが存在する場合にスキップするかどうか（デフォルト: True）
         """
@@ -223,6 +226,7 @@ class AzureBlobStorageService(StorageService):
 
             files_processed = 0
 
+            upload_results = []
             for root, _, files in os.walk(local_dir_path):
                 for filename in files:
                     file_path = os.path.join(root, filename)
@@ -230,20 +234,33 @@ class AzureBlobStorageService(StorageService):
                     remote_blob_path = (
                         prefix + relative_path.replace(os.sep, "/") if prefix else relative_path.replace(os.sep, "/")
                     )
-                    if not self._has_target_suffix(remote_blob_path, target_suffix_list):
+                    if not self._has_target_suffix(remote_blob_path, target_suffixes):
                         continue
 
                     files_processed += 1
-                    self.upload_file(file_path, remote_blob_path, skip_if_same=skip_if_same)
+                    success = self.upload_file(file_path, remote_blob_path, skip_if_same=skip_if_same)
+                    upload_results.append(success)
 
             if files_processed == 0:
-                logger.warning(f"No files matching the criteria were found in '{local_dir_path}'")
+                logger.warning(f"アップロード対象のファイルが見つかりませんでした。パス: '{local_dir_path}'")
+                return False
+
+            # 1件でもアップロードに失敗したらFalseを返す
+            if not all(upload_results):
+                logger.error(
+                    f"ディレクトリのアップロードに失敗しました。パス: '{local_dir_path}' プレフィックス: '{remote_dir_prefix}'"
+                )
+                return False
+
+            return True
 
         except Exception as e:
-            logger.error(f"Failed to upload directory '{local_dir_path}' to '{remote_dir_prefix}': {str(e)}")
-            raise
+            logger.error(
+                f"ディレクトリのアップロードに失敗しました。パス: '{local_dir_path}' プレフィックス: '{remote_dir_prefix}' エラー: {str(e)}"
+            )
+            return False
 
-    def download_file(self, remote_blob_path: str, local_file_path: str) -> None:
+    def download_file(self, remote_blob_path: str, local_file_path: str) -> bool:
         """ファイルをダウンロードする
 
         Azure Blob Storageからファイルをローカルにダウンロードします。
@@ -260,26 +277,27 @@ class AzureBlobStorageService(StorageService):
             blob_client = self.container_client.get_blob_client(remote_blob_path)
             try:
                 downloader = blob_client.download_blob()
-            except ResourceNotFoundError as err:
+            except ResourceNotFoundError:
                 logger.error(
-                    f"Blob '{remote_blob_path}' not found in container '{self.container_client.container_name}'."
+                    f"ファイルが見つかりませんでした。パス: '{remote_blob_path}' コンテナ: '{self.container_client.container_name}'."
                 )
-                raise FileNotFoundError(
-                    f"Blob '{remote_blob_path}' not found in container '{self.container_client.container_name}'."
-                ) from err
+                return False
 
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True) if os.path.dirname(local_file_path) else None
             with open(local_file_path, "wb") as file:
                 file.write(downloader.readall())
-            logger.info(f"Downloaded blob '{remote_blob_path}' to local file '{local_file_path}'")
+            logger.info(f"ファイルをダウンロードしました。パス: '{remote_blob_path}' ローカルパス: '{local_file_path}'")
+            return True
         except Exception as e:
             if not isinstance(e, FileNotFoundError):
-                logger.error(f"Failed to download blob '{remote_blob_path}' to '{local_file_path}': {str(e)}")
-            raise
+                logger.error(
+                    f"ファイルのダウンロードに失敗しました。パス: '{remote_blob_path}' ローカルパス: '{local_file_path}' エラー: {str(e)}"
+                )
+            return False
 
     def download_directory(
-        self, remote_dir_prefix: str, local_dir_path: str, target_suffix_list: list[str] | None = None
-    ) -> None:
+        self, remote_dir_prefix: str, local_dir_path: str, target_suffixes: tuple[str, ...] = ()
+    ) -> bool:
         """ディレクトリをダウンロードする
 
         指定されたプレフィックスに一致するAzure Blob Storage上のファイル群をローカルディレクトリにダウンロードします。
@@ -287,7 +305,7 @@ class AzureBlobStorageService(StorageService):
         Args:
             remote_dir_prefix: ダウンロードするAzure Blob Storage上のディレクトリプレフィックス（文字列）
             local_dir_path: ローカルの保存先ディレクトリパス（文字列）
-            target_suffix_list: ダウンロード対象とするファイルの拡張子リスト（省略可能）
+            target_suffixes: ダウンロード対象とするファイルの拡張子リスト（省略可能）
                 指定された場合、リストに含まれる拡張子を持つファイルのみがダウンロードされます
 
         Raises:
@@ -304,7 +322,7 @@ class AzureBlobStorageService(StorageService):
             for blob in blobs_list:
                 blob_name = blob.name
                 # target_suffixが指定されていて、blob名がそのsuffixで終わらなければスキップ
-                if not self._has_target_suffix(blob_name, target_suffix_list):
+                if not self._has_target_suffix(blob_name, target_suffixes):
                     continue
 
                 found = True
@@ -318,16 +336,18 @@ class AzureBlobStorageService(StorageService):
                 self.download_file(blob_name, local_path)
 
             if not found:
-                error_msg = f"No blobs found with prefix '{remote_dir_prefix}' and suffix '{target_suffix_list}' in container '{self.container_client.container_name}'."
+                error_msg = f"プレフィックス: '{remote_dir_prefix}' サフィックス: '{target_suffixes}' のファイルが見つかりませんでした。コンテナ: '{self.container_client.container_name}'."
                 logger.error(error_msg)
-                raise FileNotFoundError(error_msg)
+                return False
+
+            return True
 
         except Exception as e:
             if not isinstance(e, FileNotFoundError):
                 logger.error(
-                    f"Failed to download directory with prefix '{remote_dir_prefix}' to '{local_dir_path}': {str(e)}"
+                    f"ディレクトリのダウンロードに失敗しました。プレフィックス: '{remote_dir_prefix}' ローカルパス: '{local_dir_path}' エラー: {str(e)}"
                 )
-            raise
+            return False
 
 
 def get_storage_service() -> StorageService:
@@ -341,27 +361,19 @@ def get_storage_service() -> StorageService:
             - "azure_blob": AzureBlobStorageService
             - その他: LocalStorageService（デフォルト）
     """
-    if settings.STORAGE_TYPE == "local":
+    if settings.STORAGE_TYPE in ["local", ""] or settings.STORAGE_TYPE is None:
         logger.info("Using LocalStorageService")
         return LocalStorageService()
+
     elif settings.STORAGE_TYPE == "azure_blob":
         if not settings.AZURE_BLOB_STORAGE_ACCOUNT_NAME or not settings.AZURE_BLOB_STORAGE_CONTAINER_NAME:
             error_msg = "Azure Blob Storageの設定が不足しています。AZURE_BLOB_STORAGE_ACCOUNT_NAME と AZURE_BLOB_STORAGE_CONTAINER_NAME を設定してください。"
             logger.error(error_msg)
             raise ValueError(error_msg)
         logger.info(
-            f"Using AzureBlobStorageService with account {settings.AZURE_BLOB_STORAGE_ACCOUNT_NAME} and container {settings.AZURE_BLOB_STORAGE_CONTAINER_NAME}"
+            f"AzureBlobStorageServiceを使用します。アカウント: {settings.AZURE_BLOB_STORAGE_ACCOUNT_NAME} コンテナ: {settings.AZURE_BLOB_STORAGE_CONTAINER_NAME}"
         )
         return AzureBlobStorageService()
 
-    logger.warning(f"Unknown storage type: {settings.STORAGE_TYPE}, falling back to local storage")
+    logger.warning(f"STORAGE_TYPEが不明: {settings.STORAGE_TYPE}, ローカルストレージにフォールバックします")
     return LocalStorageService()
-
-
-if __name__ == "__main__":
-    storage_service = AzureBlobStorageService()
-    slug = "0309-example"
-    local_dir_path = f"/Users/nasuka/workspace/shotokutaishi/server/broadlistening/pipeline/outputs/{slug}"
-    remote_dir_prefix = f"example_outputs_1/{slug}"
-    storage_service.upload_directory(local_dir_path, remote_dir_prefix)
-    storage_service.download_directory(remote_dir_prefix, f"local_outputs_1/{slug}")
