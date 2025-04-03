@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   Card,
+  Flex,
   Heading,
   HStack,
   Spinner,
@@ -175,10 +176,21 @@ function ReportCard({ report }: { report: Report }) {
                         const isCompleted = index < currentStepIndex
                         return (
                           <Steps.Item key={index} index={index} title={step.title}>
-                            <Steps.Indicator bg={isCompleted ? 'green.500' : 'gray.300'} />
-                            <Steps.Title color={isCompleted ? 'green.500' : 'gray.300'}>
-                              {step.title}
-                            </Steps.Title>
+                            <Flex direction="column" align="center">
+                              <Steps.Indicator
+                                boxSize="24px"
+                                bg={isCompleted ? 'green.500' : 'gray.300'}
+                              />
+                              <Steps.Title
+                                mt={1}
+                                fontSize="sm"
+                                whiteSpace="nowrap"
+                                textAlign="center"
+                                color={isCompleted ? 'green.500' : 'gray.300'}
+                              >
+                                {step.title}
+                              </Steps.Title>
+                            </Flex>
                             <Steps.Separator borderColor={isCompleted ? 'green.500' : 'gray.300'} />
                           </Steps.Item>
                         )
