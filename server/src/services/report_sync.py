@@ -49,6 +49,7 @@ class ReportSyncService:
             return False
         except Exception as e:
             logger.error(f"Failed to download status file from storage: {e}")
+            return False
 
     def download_all_report_results_from_storage(self) -> bool:
         """レポート結果ファイル（hierarchical_result.json）のみをストレージからダウンロードする
