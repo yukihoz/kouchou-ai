@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+
 from src.config import settings
 from src.schemas.admin_report import ReportInput
 from src.services.report_status import add_new_report_to_status, set_status
@@ -25,6 +26,7 @@ def _build_config(report_input: ReportInput) -> dict[str, Any]:
         "question": report_input.question,
         "intro": report_input.intro,
         "model": report_input.model,
+        "is_pubcom": report_input.is_pubcom,
         "extraction": {
             "prompt": report_input.prompt.extraction,
             "workers": report_input.workers,

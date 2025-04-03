@@ -184,7 +184,7 @@ def main():
     )
     parser.add_argument(
         "--api-url",
-        help=f"API base URL (example: https://api.*****.japaneast.azurecontainerapps.io)",
+        help="API base URL (example: https://api.*****.japaneast.azurecontainerapps.io)",
         required=True,
     )
     args = parser.parse_args()

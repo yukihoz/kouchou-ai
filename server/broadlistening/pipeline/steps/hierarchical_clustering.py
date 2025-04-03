@@ -13,12 +13,25 @@ def hierarchical_clustering(config):
 
     dataset = config["output_dir"]
     path = f"outputs/{dataset}/hierarchical_clusters.csv"
-    arguments_df = pd.read_csv(f"outputs/{dataset}/args.csv")
+    arguments_df = pd.read_csv(f"outputs/{dataset}/args.csv", usecols=["arg-id", "argument"])
     embeddings_df = pd.read_pickle(f"outputs/{dataset}/embeddings.pkl")
     embeddings_array = np.asarray(embeddings_df["embedding"].values.tolist())
     cluster_nums = config["hierarchical_clustering"]["cluster_nums"]
 
-    umap_model = UMAP(random_state=42, n_components=2)
+    n_samples = embeddings_array.shape[0]
+    # デフォルト設定は15
+    default_n_neighbors = 15
+
+    # テスト等サンプルが少なすぎる場合、n_neighborsの設定値を下げる
+    if n_samples <= default_n_neighbors:
+        n_neighbors = max(2, n_samples - 1)  # 最低2以上
+    else:
+        n_neighbors = default_n_neighbors
+
+    umap_model = UMAP(random_state=42, n_components=2, n_neighbors=n_neighbors)
+    # TODO 詳細エラーメッセージを加える
+    # 以下のエラーの場合、おそらく元の意見件数が少なすぎることが原因
+    # TypeError: Cannot use scipy.linalg.eigh for sparse A with k >= N. Use scipy.linalg.eigh(A.toarray()) or reduce k.
     umap_embeds = umap_model.fit_transform(embeddings_array)
 
     cluster_results = hierarchical_clustering_embeddings(
@@ -28,7 +41,6 @@ def hierarchical_clustering(config):
     result_df = pd.DataFrame(
         {
             "arg-id": arguments_df["arg-id"],
-            "comment-id": arguments_df["comment-id"],
             "argument": arguments_df["argument"],
             "x": umap_embeds[:, 0],
             "y": umap_embeds[:, 1],

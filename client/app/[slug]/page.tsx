@@ -10,6 +10,7 @@ import {Separator} from '@chakra-ui/react'
 import {Metadata} from 'next'
 import {getApiBaseUrl} from '../utils/api'
 import {notFound} from 'next/navigation'
+import { Analysis } from '@/components/report/Analysis'
 
 type PageProps = {
   params: Promise<{
@@ -54,13 +55,19 @@ export async function generateMetadata({params}: PageProps): Promise<Metadata> {
     }
     const meta: Meta = await metaResponse.json()
     const result: Result = await resultResponse.json()
-    return {
+    const metaData: Metadata = {
       title: `${result.config.question} - ${meta.reporter}`,
       description: `${result.overview}`,
-      openGraph: {
-        images: [getApiBaseUrl() + '/meta/ogp.png'],
-      },
+      metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
     }
+
+    if (process.env.NEXT_PUBLIC_OUTPUT_MODE === 'export') {
+      metaData.openGraph = {
+        images: [`${slug}/opengraph-image.png`]
+      }
+    }
+
+    return metaData
   } catch (_e) {
     return {}
   }
@@ -80,8 +87,6 @@ export default async function Page({params}: PageProps) {
     notFound()
   }
 
-  const contentLength = resultResponse.headers.get('Content-Length')
-  const resultSize = contentLength ? parseInt(contentLength, 10) : 0
   const meta: Meta = await metaResponse.json()
   const result: Result = await resultResponse.json()
 
@@ -90,11 +95,11 @@ export default async function Page({params}: PageProps) {
       <div className={'container'}>
         <Header meta={meta}/>
         <Overview result={result}/>
-        <ClientContainer resultSize={resultSize} reportName={slug}>
-          {result.clusters.filter(c => c.level === 1).map(c => (
-            <ClusterOverview key={c.id} cluster={c}/>
-          ))}
-        </ClientContainer>
+        <ClientContainer result={result}/>
+        {result.clusters.filter(c => c.level === 1).map(c => (
+          <ClusterOverview key={c.id} cluster={c}/>
+        ))}
+        <Analysis result={result}/>
         <BackButton/>
         <Separator my={12} maxW={'750px'} mx={'auto'}/>
         <About meta={meta}/>

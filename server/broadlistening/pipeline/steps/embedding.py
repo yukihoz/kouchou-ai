@@ -9,7 +9,7 @@ def embedding(config):
 
     dataset = config["output_dir"]
     path = f"outputs/{dataset}/embeddings.pkl"
-    arguments = pd.read_csv(f"outputs/{dataset}/args.csv")
+    arguments = pd.read_csv(f"outputs/{dataset}/args.csv", usecols=["arg-id", "argument"])
     embeddings = []
     batch_size = 1000
     for i in tqdm(range(0, len(arguments), batch_size)):

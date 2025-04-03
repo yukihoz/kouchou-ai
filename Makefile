@@ -1,4 +1,4 @@
-.PHONY: build up down client-setup client-dev client-dev-server client-admin-dev-server dummy-server azure-cli azure-login azure-build azure-push azure-deploy azure-info azure-config-update azure-cleanup azure-status azure-logs-client azure-logs-api azure-logs-admin azure-apply-policies prepare-yaml azure-save-env lint/server-check lint/server-format
+.PHONY: build up down client-build-static client-setup client-dev client-dev-server client-admin-dev-server dummy-server azure-cli azure-login azure-build azure-push azure-deploy azure-info azure-config-update azure-cleanup azure-status azure-logs-client azure-logs-api azure-logs-admin azure-apply-policies prepare-yaml azure-save-env lint/server-check lint/server-format
 
 ##############################################################################
 # ローカル開発環境のコマンド
@@ -11,6 +11,12 @@ up:
 	docker compose up --build
 
 down:
+	docker compose down
+
+client-build-static:
+	rm -rf out
+	docker compose up -d api
+	docker compose run --rm -v $(shell pwd)/server:/server -v $(shell pwd)/out:/app/dist client sh -c "npm run build:static && cp -r out/* dist"
 	docker compose down
 
 client-setup:
@@ -32,10 +38,14 @@ dummy-server:
 # Docker環境でのlint/check, format
 lint/api-check:
 	docker compose run --rm api python -m ruff check .
-	docker compose run --rm api python -m ruff format . --check
+	docker compose run --rm api python -m ruff format . --diff
 
 lint/api-format:
 	docker compose run --rm api python -m ruff format .
+	docker compose run --rm api python -m ruff check . --fix
+
+test/api:
+	docker compose run --rm api pytest tests/
 
 ##############################################################################
 # Azure初期デプロイのコマンド
@@ -73,13 +83,6 @@ azure-setup:
 	    az acr create --resource-group $(AZURE_RESOURCE_GROUP) --name $(AZURE_ACR_NAME) --sku $(AZURE_ACR_SKU) && \
 	    echo '>>> 設定されたACR名を.env.azureに保存しています...' && \
 	    echo 'AZURE_ACR_NAME=$(AZURE_ACR_NAME)' > /workspace/.env.azure.generated"
-
-# ACRにログイン（トークンを表示）
-azure-acr-login:
-	docker run -it --rm -v $(shell pwd):/workspace -v $(HOME)/.azure:/root/.azure -w /workspace mcr.microsoft.com/azure-cli /bin/bash -c "\
-	    echo '以下のトークンでDockerログインしてください:' && \
-	    token=\$$(az acr login --name kouchouairegistry --expose-token --query accessToken -o tsv) && \
-	    echo \"docker login kouchouairegistry.azurecr.io --username 00000000-0000-0000-0000-000000000000 --password \$$token\""
 
 # ACRに自動ログイン
 azure-acr-login-auto:
