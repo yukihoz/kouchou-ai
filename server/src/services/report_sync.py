@@ -93,7 +93,3 @@ def initialize_from_storage() -> bool:
         logger.error(f"Failed to download report files from storage: {e}")
         return False
     return status_success and reports_success
-
-
-if __name__ == "__main__":
-    initialize_from_storage()
