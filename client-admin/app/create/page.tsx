@@ -288,7 +288,6 @@ export default function Page() {
         duration: 5000,
         type: 'success',
         title: 'レポート作成を開始しました',
-        description: '処理状況はダッシュボードを更新して確認してください',
       })
       router.replace('/')
     } catch (e) {
