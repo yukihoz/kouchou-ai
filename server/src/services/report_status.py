@@ -28,12 +28,12 @@ def load_status_as_reports(include_deleted: bool = False) -> list[Report]:
         _report_status = {}
     except json.JSONDecodeError:
         _report_status = {}
-    
+
     reports = [Report(**report) for report in _report_status.values()]
-    
+
     if not include_deleted:
         reports = [report for report in reports if report.status != ReportStatus.DELETED]
-        
+
     return reports
 
 
