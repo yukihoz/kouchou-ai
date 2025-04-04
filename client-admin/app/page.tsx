@@ -13,8 +13,7 @@ import {
   Text,
   VStack,
   Icon,
-  Steps,
-  Switch
+  Steps
 } from '@chakra-ui/react'
 import Link from 'next/link'
 import {
@@ -241,9 +240,10 @@ function ReportCard({ report }: { report: Report }) {
               <>
                 <Tooltip content={report.is_public ? '公開中' : '非公開'} openDelay={0} closeDelay={0}>
                   <Box display="flex" alignItems="center">
-                    <Switch
-                      isChecked={report.is_public}
-                      onChange={async () => {
+                    <Button
+                      variant={report.is_public ? 'solid' : 'outline'}
+                      size="sm"
+                      onClick={async () => {
                         try {
                           const response = await fetch(getApiBaseUrl() + `/admin/reports/${report.slug}/toggle-public`, {
                             method: 'POST',
@@ -262,7 +262,9 @@ function ReportCard({ report }: { report: Report }) {
                           alert('公開状態の変更に失敗しました')
                         }
                       }}
-                    />
+                    >
+                      {report.is_public ? '公開中' : '非公開'}
+                    </Button>
                   </Box>
                 </Tooltip>
                 <Link href={`${process.env.NEXT_PUBLIC_CLIENT_BASEPATH}/${report.slug}`} target="_blank">
