@@ -15,9 +15,8 @@ logger = setup_logger()
 class StorageService(ABC):
     """ストレージサービスの抽象基底クラス
 
-    ファイルやディレクトリのアップロード・ダウンロード機能を提供する抽象基底クラスです。
-    異なるストレージバックエンド（ローカルストレージ、Azure Blob Storageなど）に対して
-    共通のインターフェースを定義します。
+    ファイルやディレクトリのアップロード・ダウンロード機能を提供する抽象基底クラス。
+    異なるストレージバックエンド（ローカルストレージ、Azure Blob Storageなど）に対して共通のインターフェースを定義。
     """
 
     @abstractmethod
@@ -63,10 +62,10 @@ class StorageService(ABC):
 
 
 class LocalStorageService(StorageService):
-    """ローカルストレージサービス（実質何もしない）
+    """ローカルストレージサービス
 
-    ローカルストレージを使用する場合のサービス実装です。
-    実際にはファイルの移動を行わないため、ほとんどのメソッドは何も処理を行いません。
+    ローカルストレージを使用する場合のサービス。
+    ストレージタイプがlocalの場合にインターフェースを揃えるためのもので、実際には処理を行わない。
     """
 
     def upload_file(self, local_path: str | Path, remote_path: str) -> None:
@@ -119,6 +118,8 @@ class LocalStorageService(StorageService):
         logger.debug(f"LocalStorageService: upload_directory は何もしません - {local_dir_path} -> {remote_dir_prefix}")
 
 
+# NOTE: 現在は外部ストレージ連携がAzure Blob Storageのみのため、一つのファイルに全てのクラスを記載している
+# 外部ストレージ連携が増えた場合は、それぞれのストレージに応じたクラスを作成することを検討する
 class AzureBlobStorageService(StorageService):
     """Azure Blob Storageを使用するストレージサービス
 

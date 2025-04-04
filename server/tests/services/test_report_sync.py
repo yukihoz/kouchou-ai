@@ -28,7 +28,7 @@ class TestReportSyncService:
         """ステータスファイルのモック"""
         # 一時ディレクトリにステータスファイルを作成
         status_file = tmp_path / "report_status.json"
-        status_file.write_text('{"status": "test"}')
+        status_file.write_text("{}")
 
         # テスト用のパスに置き換え
         with patch.object(ReportSyncService, "LOCAL_STATUS_FILE_PATH", status_file):

@@ -29,7 +29,7 @@ class ReportSyncService:
 
         report_dir = settings.REPORT_DIR / slug
         if not report_dir.exists():
-            logger.warning(f"Report directory does not exist: {report_dir}")
+            logger.warning(f"レポートディレクトリが存在しません: {report_dir}")
             return
 
         local_dir = settings.REPORT_DIR / slug
@@ -47,7 +47,9 @@ class ReportSyncService:
             with open(self.LOCAL_STATUS_FILE_PATH) as f:
                 report_status = json.load(f)
             if report_status:  # データが存在する場合はスキップ
-                logger.info("Status file already exists and is not empty, skipping download")
+                logger.info(
+                    "ステータスファイルが存在していますが、中身が空ではありません。ダウンロードをスキップします"
+                )
                 return True
 
         try:
@@ -55,10 +57,10 @@ class ReportSyncService:
             self.storage_service.download_file(remote_status_file_path, str(self.LOCAL_STATUS_FILE_PATH))
             return True
         except FileNotFoundError:
-            logger.warning(f"Status file not found in storage: {remote_status_file_path}")
+            logger.warning(f"ストレージにステータスファイルが存在しません: {remote_status_file_path}")
             return False
         except Exception as e:
-            logger.error(f"Failed to download status file from storage: {e}")
+            logger.error(f"ステータスファイルのダウンロードに失敗しました: {e}")
             return False
 
     def download_all_report_results_from_storage(self) -> bool:
@@ -75,10 +77,10 @@ class ReportSyncService:
             )
             return True
         except FileNotFoundError:
-            logger.warning(f"No report files found in storage with prefix: {self.REMOTE_REPORT_DIR_PREFIX}")
+            logger.warning(f"ストレージにレポートファイルが存在しません: {self.REMOTE_REPORT_DIR_PREFIX}")
             return False
         except Exception as e:
-            logger.error(f"Failed to download report files from storage: {e}")
+            logger.error(f"レポートファイルのダウンロードに失敗しました: {e}")
             return False
 
 
@@ -89,17 +91,14 @@ def initialize_from_storage() -> bool:
         bool: 初期化に成功した場合はTrue、失敗した場合はFalse
     """
     report_sync_service = ReportSyncService()
-    status_success = False
-    reports_success = False
-
     try:
         status_success = report_sync_service.download_status_file_from_storage()
     except Exception as e:
-        logger.error(f"Failed to download status file from storage: {e}")
+        logger.error(f"ステータスファイルのダウンロードに失敗しました: {e}")
         return False
     try:
         reports_success = report_sync_service.download_all_report_results_from_storage()
     except Exception as e:
-        logger.error(f"Failed to download report files from storage: {e}")
+        logger.error(f"レポートファイルのダウンロードに失敗しました: {e}")
         return False
     return status_success and reports_success

@@ -35,14 +35,13 @@ def get_app():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ストレージからファイルを初期化（設定されている場合）
-    if settings.STORAGE_TYPE != "local":
-        slogger.info(f"Initializing files from storage (type: {settings.STORAGE_TYPE})")
-        success = initialize_from_storage()
-        if success:
-            slogger.info("Successfully initialized files from storage")
-        else:
-            slogger.warning("Failed to initialize some files from storage")
+    # ストレージからファイルを初期化
+    slogger.info(f"Initializing files from storage (type: {settings.STORAGE_TYPE})")
+    success = initialize_from_storage()
+    if success:
+        slogger.info("Successfully initialized files from storage")
+    else:
+        slogger.warning("Failed to initialize some files from storage")
 
     # ステータスファイルをロード
     load_status()
