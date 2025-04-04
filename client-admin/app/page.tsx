@@ -265,16 +265,16 @@ function ReportCard({ report }: { report: Report }) {
                             'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
                             'Content-Type': 'application/json'
                           }
-                        });
+                        })
                         if (response.ok) {
-                          alert('レポートを削除しました');
-                          window.location.reload();
+                          alert('レポートを削除しました')
+                          window.location.reload()
                         } else {
-                          alert('レポートの削除に失敗しました');
+                          alert('レポートの削除に失敗しました')
                         }
                       } catch (error) {
-                        console.error(error);
-                        alert('レポートの削除に失敗しました');
+                        console.error(error)
+                        alert('レポートの削除に失敗しました')
                       }
                     }
                   }}
