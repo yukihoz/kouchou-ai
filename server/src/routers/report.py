@@ -24,7 +24,9 @@ async def verify_public_api_key(api_key: str = Security(api_key_header)):
 @router.get("/reports", dependencies=[Depends(verify_public_api_key)])
 async def reports() -> list[Report]:
     all_reports = load_status_as_reports()
-    ready_reports = [report for report in all_reports if report.status == ReportStatus.READY and getattr(report, "is_public", True)]
+    ready_reports = [
+        report for report in all_reports if report.status == ReportStatus.READY and getattr(report, "is_public", True)
+    ]
     return ready_reports
 
 
