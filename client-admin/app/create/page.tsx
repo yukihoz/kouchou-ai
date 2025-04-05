@@ -616,7 +616,7 @@ export default function Page() {
               </Field.Root>
               <Field.Root>
                 <Field.Label>意見グループ数</Field.Label>
-                <HStack>
+                <HStack w={'100%'}>
                   <Button
                     onClick={() => {
                       setClusterLv1(Math.max(2, clusterLv1 - 1))
