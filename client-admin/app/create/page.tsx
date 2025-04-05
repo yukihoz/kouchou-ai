@@ -618,25 +618,63 @@ export default function Page() {
               <Field.Root>
                 <Field.Label>意見グループ数</Field.Label>
                 <HStack>
-                  <StepperInput
+                  <Button
+                    onClick={() => {
+                      setClusterLv1(Math.max(2, clusterLv1 - 1))
+                    }}
+                    variant="outline"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
                     value={clusterLv1.toString()}
                     min={2}
                     max={10}
-                    onValueChange={(e) => {
-                      const v = Number(e.value)
-                      setClusterLv1(v)
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      if (!isNaN(v)) {
+                        setClusterLv1(Math.max(2, Math.min(10, v)))
+                      }
                     }}
                   />
-                  <ChevronRightIcon />
-                  <StepperInput
+                  <Button
+                    onClick={() => {
+                      setClusterLv1(Math.min(10, clusterLv1 + 1))
+                    }}
+                    variant="outline"
+                  >
+                    +
+                  </Button>
+                  <ChevronRightIcon width="100px"/>
+                  <Button
+                    onClick={() => {
+                      setClusterLv2(Math.max(2, clusterLv2 - 1))
+                    }}
+                    variant="outline"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
                     value={clusterLv2.toString()}
                     min={2}
                     max={1000}
-                    onValueChange={(e) => {
-                      const v = Number(e.value)
-                      setClusterLv2(v)
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      if (!isNaN(v)) {
+                        setClusterLv2(Math.max(2, Math.min(1000, v)))
+                      }
                     }}
                   />
+                  <Button
+                    onClick={() => {
+                      setClusterLv2(Math.min(1000, clusterLv2 + 1))
+                    }}
+                    variant="outline"
+                  >
+                    +
+                  </Button>
                 </HStack>
                 <Field.HelperText>
                   階層ごとの意見グループ生成数です
