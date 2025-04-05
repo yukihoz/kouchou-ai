@@ -97,9 +97,15 @@ def _monitor_process(process: subprocess.Popen, slug: str) -> None:
         # レポート生成成功時、ステータスを更新
         set_status(slug, "ready")
 
-        logger.info(f"Syncing report files for {slug} to storage")
+        logger.info(f"Syncing files for {slug} to storage")
         report_sync_service = ReportSyncService()
+        # レポートファイルをストレージに同期し、JSONファイル以外を削除
         report_sync_service.sync_report_files_to_storage(slug)
+        # 入力ファイルをストレージに同期し、ローカルファイルを削除
+        report_sync_service.sync_input_file_to_storage(slug)
+        # 設定ファイルをストレージに同期
+        report_sync_service.sync_config_file_to_storage(slug)
+        # ステータスファイルをストレージに同期
         report_sync_service.sync_status_file_to_storage()
 
     else:
