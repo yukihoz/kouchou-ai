@@ -20,7 +20,6 @@ import {
 import { FileUploadDropzone, FileUploadList, FileUploadRoot } from '@/components/ui/file-upload'
 import { useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { StepperInput } from '@/components/ui/stepper-input'
 import { parseCsv, CsvData } from '@/app/create/parseCsv'
 import { useRouter } from 'next/navigation'
 import { toaster } from '@/components/ui/toaster'
@@ -682,16 +681,36 @@ export default function Page() {
               </Field.Root>
               <Field.Root>
                 <Field.Label>並列実行数</Field.Label>
-                <StepperInput
-                  w={'40%'}
-                  value={workers.toString()}
-                  min={1}
-                  max={100}
-                  onValueChange={(e) => {
-                    const v = Number(e.value)
-                    setWorkers(v)
-                  }}
-                />
+                <HStack>
+                  <Button
+                    onClick={() => {
+                      setWorkers(Math.max(1, workers - 1))
+                    }}
+                    variant="outline"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={workers.toString()}
+                    min={1}
+                    max={100}
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      if (!isNaN(v)) {
+                        setWorkers(Math.max(1, Math.min(100, v)))
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={() => {
+                      setWorkers(Math.min(100, workers + 1))
+                    }}
+                    variant="outline"
+                  >
+                    +
+                  </Button>
+                </HStack>
                 <Field.HelperText>
                   OpenAI APIの並列実行数です。値を大きくすることでレポート出力が速くなりますが、OpenAIアカウントのTierによってはレートリミットの上限に到達し、レポート出力が失敗する可能性があります。
                 </Field.HelperText>
