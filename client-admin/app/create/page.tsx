@@ -20,7 +20,6 @@ import {
 import { FileUploadDropzone, FileUploadList, FileUploadRoot } from '@/components/ui/file-upload'
 import { useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { StepperInput } from '@/components/ui/stepper-input'
 import { parseCsv, CsvData } from '@/app/create/parseCsv'
 import { useRouter } from 'next/navigation'
 import { toaster } from '@/components/ui/toaster'
@@ -61,6 +60,8 @@ export default function Page() {
   const [mergeLabelling, setMergeLabelling] = useState<string>(mergeLabellingPrompt)
   const [overview, setOverview] = useState<string>(overviewPrompt)
   const [isPubcomMode, setIsPubcomMode] = useState<boolean>(true)
+  const [csvColumns, setCsvColumns] = useState<string[]>([])
+  const [selectedCommentColumn, setSelectedCommentColumn] = useState<string>('')
 
   // IDのバリデーション関数
   const isValidId = (id: string): boolean => {
@@ -128,6 +129,18 @@ export default function Page() {
       const commentData = await commentResponse.json()
       setSpreadsheetData(commentData.comments)
 
+      if (commentData.comments.length > 0) {
+        const columns = Object.keys(commentData.comments[0])
+        setCsvColumns(columns)
+        if (columns.includes('comment')) {
+          setSelectedCommentColumn('comment')
+        }
+      }
+      
+      if (commentData.comments.length > 0) {
+        setCsvColumns(Object.keys(commentData.comments[0]))
+      }
+      
       toaster.create({
         type: 'success',
         title: '成功',
@@ -195,48 +208,55 @@ export default function Page() {
       setLoading(false)
       return
     }
+    if (csvColumns.length > 0 && !selectedCommentColumn) {
+      toaster.create({
+        type: 'error',
+        title: 'カラム未選択',
+        description: 'コメントカラムを選択してください',
+      })
+      setLoading(false)
+      return
+    }
+    
     let comments: CsvData[] = []
     try {
       if (inputType === 'file' && csv) {
-        try {
-          comments = await parseCsv(csv)
-          if (comments.length < clusterLv2) {
-            const confirmProceed = window.confirm(
-              `csvファイルの行数 (${comments.length}) が設定された意見グループ数 (${clusterLv2}) を下回っています。このまま続けますか？
-              \n※コメントから抽出される意見が設定された意見グループ数に満たない場合、処理中にエラーになる可能性があります（一つのコメントから複数の意見が抽出されることもあるため、問題ない場合もあります）。
-              \n意見グループ数を変更する場合は、「AI詳細設定」を開いてください。`
-            )
-            if (!confirmProceed) {
-              setLoading(false)
-              return
-            }
+        const parsed = await parseCsv(csv)
+        comments = parsed.map((row, index) => ({
+          id: `csv-${index + 1}`,
+          comment: ((row as unknown) as Record<string, unknown>)[selectedCommentColumn] as string,
+          source: null,
+          url: null
+        }))
+        if (comments.length < clusterLv2) {
+          const confirmProceed = window.confirm(
+            `csvファイルの行数 (${comments.length}) が設定された意見グループ数 (${clusterLv2}) を下回っています。このまま続けますか？
+    \n※コメントから抽出される意見が設定された意見グループ数に満たない場合、処理中にエラーになる可能性があります（一つのコメントから複数の意見が抽出されることもあるため、問題ない場合もあります）。
+    \n意見グループ数を変更する場合は、「AI詳細設定」を開いてください。`
+          )
+          if (!confirmProceed) {
+            setLoading(false)
+            return
           }
-        } catch (e) {
-          toaster.create({
-            type: 'error',
-            title: 'CSVファイルの読み込みに失敗しました',
-            description: e as string,
-          })
-          setLoading(false)
-          return
         }
       } else if (inputType === 'spreadsheet' && spreadsheetImported) {
-        comments = spreadsheetData.map((item, index) => ({
-          id: item.id || `spreadsheet-${index + 1}`,
-          comment: item.comment,
-          source: item.source || null,
-          url: item.url || null
+        comments = spreadsheetData.map((row, index) => ({
+          id: row.id || `spreadsheet-${index + 1}`,
+          comment: ((row as unknown) as Record<string, unknown>)[selectedCommentColumn] as string,
+          source: row.source || null,
+          url: row.url || null
         }))
       }
     } catch (e) {
       toaster.create({
         type: 'error',
-        title: 'CSVファイルの読み込みに失敗しました',
+        title: 'データの読み込みに失敗しました',
         description: e as string,
       })
       setLoading(false)
       return
     }
+    
     try {
       const payload = {
         input,
@@ -302,10 +322,36 @@ export default function Page() {
       setLoading(false)
     }
   }
-
   const handleTabValueChange = (details: { value: string }) => {
-    setInputType(details.value as 'file' | 'spreadsheet')
+    const newType = details.value as 'file' | 'spreadsheet'
+    setInputType(newType)
+  
+    if (newType === 'file' && csv) {
+      // CSVのカラムを再構築
+      parseCsv(csv).then(parsed => {
+        if (parsed.length > 0) {
+          const columns = Object.keys(parsed[0])
+          setCsvColumns(columns)
+          if (columns.includes('comment')) {
+            setSelectedCommentColumn('comment')
+          }
+        }
+      })
+    } else if (newType === 'spreadsheet' && spreadsheetData.length > 0) {
+      // スプレッドシートのカラムを再構築
+      const columns = Object.keys(spreadsheetData[0])
+      setCsvColumns(columns)
+      if (columns.includes('comment')) {
+        setSelectedCommentColumn('comment')
+      }
+    } else {
+      // データがない場合はカラムリセット
+      setCsvColumns([])
+      setSelectedCommentColumn('')
+    }
   }
+  
+  
 
   return (
     <div className={'container'}>
@@ -368,7 +414,20 @@ export default function Page() {
                       alignItems="stretch"
                       accept={['text/csv']}
                       inputProps={{ multiple: false }}
-                      onFileChange={(e) => setCsv(e.acceptedFiles[0])}
+                      onFileChange={async (e) => {
+                        const file = e.acceptedFiles[0]
+                        setCsv(file)
+                        if (file) {
+                          const parsed = await parseCsv(file)
+                          if (parsed.length > 0) {
+                            const columns = Object.keys(parsed[0])
+                            setCsvColumns(columns)
+                            if (columns.includes('comment')) {
+                              setSelectedCommentColumn('comment')
+                            }
+                          }
+                        }
+                      }}
                     >
                       <Box opacity={csv ? 0.5 : 1} pointerEvents={csv ? 'none' : 'auto'}>
                         <FileUploadDropzone
@@ -381,7 +440,26 @@ export default function Page() {
                         onRemove={() => setCsv(null)}
                       />
                     </FileUploadRoot>
-                    <Field.HelperText>カラムに<b>&quot;comment&quot;</b>を含むCSVファイルが必要です(それ以外のカラムは無視されます)</Field.HelperText>
+                    {csvColumns.length > 0 && (
+                      <Field.Root mt={4}>
+                        <Field.Label>コメントカラム選択</Field.Label>
+                        <NativeSelect.Root w={'60%'}>
+                          <NativeSelect.Field
+                            value={selectedCommentColumn}
+                            onChange={(e) => setSelectedCommentColumn(e.target.value)}
+                          >
+                            <option value="">選択してください</option>
+                            {csvColumns.map((col) => (
+                              <option key={col} value={col}>{col}</option>
+                            ))}
+                          </NativeSelect.Field>
+                          <NativeSelect.Indicator />
+                        </NativeSelect.Root>
+                        <Field.HelperText>
+                          分析対象のコメントが含まれるカラムを選んでください（それ以外のカラムは無視されます）。
+                        </Field.HelperText>
+                      </Field.Root>
+                    )}
                   </VStack>
                 </Tabs.Content>
 
@@ -412,8 +490,28 @@ export default function Page() {
                       </HStack>
                       <Field.HelperText>
                         公開されているGoogleスプレッドシートのURLを入力してください<br />
-                        スプレッドシートの<b>&quot;comment&quot;</b>カラムのテキストが分析対象となります(それ以外のカラムは無視されます)
                       </Field.HelperText>
+                      {csvColumns.length > 0 && (
+                        <Field.Root mt={4}>
+                          <Field.Label>コメントカラム選択</Field.Label>
+                          <NativeSelect.Root w={'60%'}>
+                            <NativeSelect.Field
+                              value={selectedCommentColumn}
+                              onChange={(e) => setSelectedCommentColumn(e.target.value)}
+                            >
+                              <option value="">選択してください</option>
+                              {csvColumns.map((col) => (
+                                <option key={col} value={col}>{col}</option>
+                              ))}
+                            </NativeSelect.Field>
+                            <NativeSelect.Indicator />
+                          </NativeSelect.Root>
+                          <Field.HelperText>
+                            分析対象のコメントが含まれるカラムを選んでください（それ以外のカラムは無視されます）。
+                          </Field.HelperText>
+                        </Field.Root>
+                      )}
+
                     </Field.Root>
                     {spreadsheetImported && (
                       <Text color="green.500" fontSize="sm">
@@ -458,6 +556,8 @@ export default function Page() {
                             setSpreadsheetLoading(false)
                             setImportedId('')
                             setSpreadsheetUrl('')
+                            setSelectedCommentColumn('')
+                            setCsvColumns([])
                           }
                         }}
                         colorScheme="red"
@@ -516,26 +616,64 @@ export default function Page() {
               </Field.Root>
               <Field.Root>
                 <Field.Label>意見グループ数</Field.Label>
-                <HStack>
-                  <StepperInput
+                <HStack w={'100%'}>
+                  <Button
+                    onClick={() => {
+                      setClusterLv1(Math.max(2, clusterLv1 - 1))
+                    }}
+                    variant="outline"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
                     value={clusterLv1.toString()}
                     min={2}
                     max={10}
-                    onValueChange={(e) => {
-                      const v = Number(e.value)
-                      setClusterLv1(v)
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      if (!isNaN(v)) {
+                        setClusterLv1(Math.max(2, Math.min(10, v)))
+                      }
                     }}
                   />
-                  <ChevronRightIcon />
-                  <StepperInput
+                  <Button
+                    onClick={() => {
+                      setClusterLv1(Math.min(10, clusterLv1 + 1))
+                    }}
+                    variant="outline"
+                  >
+                    +
+                  </Button>
+                  <ChevronRightIcon width="100px"/>
+                  <Button
+                    onClick={() => {
+                      setClusterLv2(Math.max(2, clusterLv2 - 1))
+                    }}
+                    variant="outline"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
                     value={clusterLv2.toString()}
                     min={2}
                     max={1000}
-                    onValueChange={(e) => {
-                      const v = Number(e.value)
-                      setClusterLv2(v)
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      if (!isNaN(v)) {
+                        setClusterLv2(Math.max(2, Math.min(1000, v)))
+                      }
                     }}
                   />
+                  <Button
+                    onClick={() => {
+                      setClusterLv2(Math.min(1000, clusterLv2 + 1))
+                    }}
+                    variant="outline"
+                  >
+                    +
+                  </Button>
                 </HStack>
                 <Field.HelperText>
                   階層ごとの意見グループ生成数です
@@ -543,16 +681,36 @@ export default function Page() {
               </Field.Root>
               <Field.Root>
                 <Field.Label>並列実行数</Field.Label>
-                <StepperInput
-                  w={'40%'}
-                  value={workers.toString()}
-                  min={1}
-                  max={100}
-                  onValueChange={(e) => {
-                    const v = Number(e.value)
-                    setWorkers(v)
-                  }}
-                />
+                <HStack>
+                  <Button
+                    onClick={() => {
+                      setWorkers(Math.max(1, workers - 1))
+                    }}
+                    variant="outline"
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={workers.toString()}
+                    min={1}
+                    max={100}
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      if (!isNaN(v)) {
+                        setWorkers(Math.max(1, Math.min(100, v)))
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={() => {
+                      setWorkers(Math.min(100, workers + 1))
+                    }}
+                    variant="outline"
+                  >
+                    +
+                  </Button>
+                </HStack>
                 <Field.HelperText>
                   OpenAI APIの並列実行数です。値を大きくすることでレポート出力が速くなりますが、OpenAIアカウントのTierによってはレートリミットの上限に到達し、レポート出力が失敗する可能性があります。
                 </Field.HelperText>
