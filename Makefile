@@ -88,6 +88,18 @@ azure-setup:
 azure-create-storage:
 	$(call read-env)
 	docker run -it --rm -v $(shell pwd):/workspace -v $(HOME)/.azure:/root/.azure -w /workspace mcr.microsoft.com/azure-cli /bin/bash -c "\
+	    echo '>>> Microsoft.Storageプロバイダーの状態を確認中...' && \
+	    PROVIDER_STATE=\$$(az provider show --namespace Microsoft.Storage --query registrationState -o tsv 2>/dev/null || echo 'NotRegistered') && \
+	    if [ \"\$$PROVIDER_STATE\" != \"Registered\" ]; then \
+	        echo '>>> Microsoft.Storageプロバイダーを登録中...' && \
+	        az provider register --namespace Microsoft.Storage && \
+	        echo '>>> Microsoft.Storageの登録を待機中...' && \
+	        while [ \$$(az provider show --namespace Microsoft.Storage --query registrationState -o tsv) != \"Registered\" ]; do \
+	            echo \"   - 登録処理を待機中...\" && sleep 5; \
+	        done; \
+	    else \
+	        echo '>>> Microsoft.Storageプロバイダーは既に登録されています。'; \
+	    fi && \
 	    echo '>>> ストレージアカウントの作成...' && \
 	    az storage account create \
 	        --name $(AZURE_BLOB_STORAGE_ACCOUNT_NAME) \
@@ -330,8 +342,8 @@ azure-setup-all:
 	@echo ">>> 6. Container Appsへのデプロイ..."
 	@$(MAKE) azure-deploy
 
-	@echo ">>> コンテナアプリ作成を待機中（20秒）..."
-	@sleep 20
+	@echo ">>> コンテナアプリ作成を待機中（40秒）..."
+	@sleep 40
 
 	@echo ">>> 7. マネージドIDのContainer Appへの割り当て"
 	@$(MAKE) azure-assign-managed-identity
