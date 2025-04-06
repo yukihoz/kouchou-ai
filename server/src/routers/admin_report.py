@@ -8,7 +8,7 @@ from src.config import settings
 from src.schemas.admin_report import ReportInput
 from src.schemas.report import Report
 from src.services.report_launcher import launch_report_generation
-from src.services.report_status import load_status_as_reports
+from src.services.report_status import load_status_as_reports, toggle_report_public_state
 from src.utils.logger import setup_logger
 
 slogger = setup_logger()
@@ -75,8 +75,6 @@ async def get_current_step(slug: str):
 @router.patch("/admin/reports/{slug}/visibility")
 async def update_report_visibility(slug: str, api_key: str = Depends(verify_admin_api_key)) -> dict:
     try:
-        from src.services.report_status import toggle_report_public_state
-
         is_public = toggle_report_public_state(slug)
 
         return {"success": True, "isPublic": is_public}
