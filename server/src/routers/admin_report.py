@@ -77,9 +77,9 @@ async def toggle_report_public_state(slug: str, api_key: str = Depends(verify_ad
     try:
         from src.services.report_status import toggle_report_public_state
 
-        isPublic = toggle_report_public_state(slug)
+        is_public = toggle_report_public_state(slug)
 
-        return {"success": True, "isPublic": isPublic}
+        return {"success": True, "isPublic": is_public}
     except ValueError as e:
         slogger.error(f"ValueError: {e}", exc_info=True)
         raise HTTPException(status_code=404, detail=str(e)) from e

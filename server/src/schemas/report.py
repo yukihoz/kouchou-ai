@@ -15,4 +15,4 @@ class Report(SchemaBaseModel):
     description: str
     status: ReportStatus
     is_pubcom: bool = False
-    isPublic: bool = True  # デフォルトは公開状態
+    is_public: bool = True  # デフォルトは公開状態
