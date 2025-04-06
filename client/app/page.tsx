@@ -7,6 +7,9 @@ import Link from 'next/link'
 import {Metadata} from 'next'
 import {getApiBaseUrl} from './utils/api'
 
+
+export const revalidate = 300
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const metaResponse = await fetch(getApiBaseUrl() + '/meta/metadata.json')
