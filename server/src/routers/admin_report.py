@@ -72,8 +72,8 @@ async def get_current_step(slug: str):
         return {"current_step": "error"}
 
 
-@router.post("/admin/reports/{slug}/toggle-public")
-async def toggle_report_public_state(slug: str, api_key: str = Depends(verify_admin_api_key)) -> dict:
+@router.patch("/admin/reports/{slug}/visibility")
+async def update_report_visibility(slug: str, api_key: str = Depends(verify_admin_api_key)) -> dict:
     try:
         from src.services.report_status import toggle_report_public_state
 

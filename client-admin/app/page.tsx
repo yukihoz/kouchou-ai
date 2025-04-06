@@ -245,8 +245,8 @@ function ReportCard({ report, reports, setReports }: { report: Report, reports?:
                       size="sm"
                       onClick={async () => {
                         try {
-                          const response = await fetch(getApiBaseUrl() + `/admin/reports/${report.slug}/toggle-public`, {
-                            method: 'POST',
+                          const response = await fetch(getApiBaseUrl() + `/admin/reports/${report.slug}/visibility`, {
+                            method: 'PATCH',
                             headers: {
                               'x-api-key': process.env.NEXT_PUBLIC_ADMIN_API_KEY || '',
                               'Content-Type': 'application/json'
