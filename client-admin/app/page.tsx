@@ -238,10 +238,10 @@ function ReportCard({ report }: { report: Report }) {
             )}
             {report.status === 'ready' && (
               <>
-                <Tooltip content={report.is_public ? '公開中' : '非公開'} openDelay={0} closeDelay={0}>
+                <Tooltip content={report.isPublic ? '公開中' : '非公開'} openDelay={0} closeDelay={0}>
                   <Box display="flex" alignItems="center">
                     <Button
-                      variant={report.is_public ? 'solid' : 'outline'}
+                      variant={report.isPublic ? 'solid' : 'outline'}
                       size="sm"
                       onClick={async () => {
                         try {
@@ -263,7 +263,7 @@ function ReportCard({ report }: { report: Report }) {
                         }
                       }}
                     >
-                      {report.is_public ? '公開中' : '非公開'}
+                      {report.isPublic ? '公開中' : '非公開'}
                     </Button>
                   </Box>
                 </Tooltip>
