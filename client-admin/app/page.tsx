@@ -126,7 +126,7 @@ function useReportProgressPoll(slug: string, shouldSubscribe: boolean) {
 }
 
 // 個々のレポートカードコンポーネント
-function ReportCard({ report }: { report: Report }) {
+function ReportCard({ report, reports, setReports }: { report: Report, reports?: Report[], setReports?: (reports: Report[] | undefined) => void }) {
   const statusDisplay = getStatusDisplay(report.status)
   // report.status が 'ready' でない場合はポーリングを有効にする
   const progress = useReportProgressPoll(report.slug, report.status !== 'ready')
@@ -255,8 +255,15 @@ function ReportCard({ report }: { report: Report }) {
                           if (!response.ok) {
                             throw new Error('公開状態の変更に失敗しました')
                           }
-                          await response.json()
-                          window.location.reload()
+                          const data = await response.json()
+                          const updatedReports = reports?.map(r => 
+                            r.slug === report.slug 
+                              ? { ...r, isPublic: data.isPublic } 
+                              : r
+                          )
+                          if (setReports) {
+                            setReports(updatedReports)
+                          }
                         } catch (error) {
                           console.error(error)
                           alert('公開状態の変更に失敗しました')
@@ -334,7 +341,7 @@ export default function Page() {
           </VStack>
         )}
         {reports && reports.map(report => (
-          <ReportCard key={report.slug} report={report} />
+          <ReportCard key={report.slug} report={report} reports={reports} setReports={setReports} />
         ))}
         <HStack justify="center" mt={10}>
           <Link href="/create">
