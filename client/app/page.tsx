@@ -74,6 +74,11 @@ export default async function Page() {
                             mb={1}
                           >{report.title}</Text>
                         </Card.Title>
+                        {report.createdAt && (
+                          <Text fontSize={'xs'} color={'gray.500'} mb={1}>
+                            作成日時: {new Date(report.createdAt).toLocaleString('ja-JP')}
+                          </Text>
+                        )}
                         <Card.Description>
                           {report.description || ''}
                         </Card.Description>

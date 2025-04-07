@@ -13,6 +13,7 @@ export type Report = {
   title: string
   description: string
   isPublic?: boolean
+  createdAt?: string  // 作成日時（ISO形式の文字列）
 }
 
 export type Result = {
