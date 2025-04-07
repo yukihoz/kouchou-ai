@@ -1,13 +1,13 @@
-import type {NextConfig} from 'next'
+import type { NextConfig } from "next";
 
-const isStaticExport = process.env.NEXT_PUBLIC_OUTPUT_MODE === 'export'
+const isStaticExport = process.env.NEXT_PUBLIC_OUTPUT_MODE === "export";
 
 const nextConfig: NextConfig = {
-  output: isStaticExport ? 'export' : undefined,
+  output: isStaticExport ? "export" : undefined,
   trailingSlash: isStaticExport ? true : undefined,
   experimental: {
-    optimizePackageImports: ['@chakra-ui/react'],
-  }
-}
+    optimizePackageImports: ["@chakra-ui/react"],
+  },
+};
 
-export default nextConfig
+export default nextConfig;
