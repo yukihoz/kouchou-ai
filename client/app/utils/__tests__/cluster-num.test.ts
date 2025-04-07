@@ -1,5 +1,5 @@
 import { getClusterNum } from '../cluster-num'
-import { Result, Cluster } from '@/type'
+import { Result } from '@/type'
 
 describe('getClusterNum', () => {
   it('correctly counts clusters by level', () => {
