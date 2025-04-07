@@ -20,6 +20,7 @@ client-build-static:
 	docker compose down
 
 client-setup:
+	npm install
 	cd client && npm install && cp .env-sample .env
 	cd client-admin && npm install && cp .env-sample .env
 	cd utils/dummy-server && npm install && cp .env-sample .env
