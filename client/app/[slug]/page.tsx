@@ -23,7 +23,7 @@ export const revalidate = 300;
 
 export async function generateStaticParams() {
   try {
-    const response = await fetch(getApiBaseUrl() + "/reports", {
+    const response = await fetch(`${getApiBaseUrl()}/reports`, {
       headers: {
         "x-api-key": process.env.NEXT_PUBLIC_PUBLIC_API_KEY || "",
         "Content-Type": "application/json",
@@ -45,8 +45,8 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   try {
     const slug = (await params).slug;
-    const metaResponse = await fetch(getApiBaseUrl() + "/meta/metadata.json");
-    const resultResponse = await fetch(getApiBaseUrl() + `/reports/${slug}`, {
+    const metaResponse = await fetch(`${getApiBaseUrl()}/meta/metadata.json`);
+    const resultResponse = await fetch(`${getApiBaseUrl()}/reports/${slug}`, {
       headers: {
         "x-api-key": process.env.NEXT_PUBLIC_PUBLIC_API_KEY || "",
         "Content-Type": "application/json",
@@ -79,8 +79,8 @@ export async function generateMetadata({
 
 export default async function Page({ params }: PageProps) {
   const slug = (await params).slug;
-  const metaResponse = await fetch(getApiBaseUrl() + "/meta/metadata.json");
-  const resultResponse = await fetch(getApiBaseUrl() + `/reports/${slug}`, {
+  const metaResponse = await fetch(`${getApiBaseUrl()}/meta/metadata.json`);
+  const resultResponse = await fetch(`${getApiBaseUrl()}/reports/${slug}`, {
     headers: {
       "x-api-key": process.env.NEXT_PUBLIC_PUBLIC_API_KEY || "",
       "Content-Type": "application/json",

@@ -68,7 +68,7 @@ export function ClusterBreadcrumb({ selectedClusters, onChangeFilter }: Props) {
         </BreadcrumbLink>
         {selectedClusters.map((cluster, i) => (
           <BreadcrumbLink
-            key={i}
+            key={cluster.id}
             fontSize={"sm"}
             fontWeight={i === selectedClusters.length - 1 ? "bold" : "normal"}
             onClick={() => {

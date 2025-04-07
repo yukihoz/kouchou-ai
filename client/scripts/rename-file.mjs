@@ -1,6 +1,6 @@
-import { constants } from "fs";
-import { resolve } from "path";
-import { access, rename } from "fs/promises";
+import { constants } from "node:fs";
+import { access, rename } from "node:fs/promises";
+import { resolve } from "node:path";
 
 let ignoreFiles = [];
 

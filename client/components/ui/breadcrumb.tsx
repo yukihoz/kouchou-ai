@@ -22,7 +22,7 @@ export const BreadcrumbRoot = React.forwardRef<
         {validChildren.map((child, index) => {
           const last = index === validChildren.length - 1;
           return (
-            <React.Fragment key={index}>
+            <React.Fragment key={child.key || index}>
               <Breadcrumb.Item>{child}</Breadcrumb.Item>
               {!last && (
                 <Breadcrumb.Separator>{separator}</Breadcrumb.Separator>

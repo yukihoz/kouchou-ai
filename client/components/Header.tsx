@@ -14,16 +14,14 @@ export function Header({ meta }: Props) {
     <HStack justify="space-between" mb={8} mx={"auto"} maxW={"1200px"}>
       <HStack>
         {meta && (
-          <>
-            <Image
-              src={getImageFromServerSrc("/meta/reporter.png")}
-              mx={"auto"}
-              objectFit={"cover"}
-              maxH={{ base: "40px", md: "60px" }}
-              maxW={{ base: "120px", md: "200px" }}
-              alt={meta.reporter}
-            />
-          </>
+          <Image
+            src={getImageFromServerSrc("/meta/reporter.png")}
+            mx={"auto"}
+            objectFit={"cover"}
+            maxH={{ base: "40px", md: "60px" }}
+            maxW={{ base: "120px", md: "200px" }}
+            alt={meta.reporter}
+          />
         )}
       </HStack>
       <BroadlisteningGuide />

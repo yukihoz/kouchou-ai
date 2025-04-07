@@ -1,4 +1,4 @@
-var locale = {
+const locale = {
   moduleType: "locale",
   name: "ja",
   dictionary: {
@@ -113,7 +113,9 @@ var locale = {
     date: "%Y/%m/%d",
   },
 };
-"undefined" == typeof Plotly
-  ? ((window.PlotlyLocales = window.PlotlyLocales || []),
-    window.PlotlyLocales.push(locale))
-  : Plotly.register(locale);
+if ("undefined" === typeof Plotly) {
+  window.PlotlyLocales = window.PlotlyLocales || [];
+  window.PlotlyLocales.push(locale);
+} else {
+  Plotly.register(locale);
+}

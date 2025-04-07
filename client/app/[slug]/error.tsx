@@ -8,7 +8,7 @@ type Props = {
   reset: () => void;
 };
 
-export default function Error({ error, reset }: Props) {
+export default function ErrorPage({ error, reset }: Props) {
   useEffect(() => {
     console.error(error);
   }, [error]);

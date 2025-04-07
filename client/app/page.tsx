@@ -11,13 +11,13 @@ export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
-    const metaResponse = await fetch(getApiBaseUrl() + "/meta/metadata.json");
+    const metaResponse = await fetch(`${getApiBaseUrl()}/meta/metadata.json`);
     const meta: Meta = await metaResponse.json();
     return {
       title: `${meta.reporter} - 広聴AI(デジタル民主主義2030ブロードリスニング)`,
       description: `${meta.message}`,
       openGraph: {
-        images: [process.env.NEXT_PUBLIC_API_BASEPATH + "/meta/ogp.png"],
+        images: [`${process.env.NEXT_PUBLIC_API_BASEPATH}/meta/ogp.png`],
       },
     };
   } catch (_e) {
@@ -29,8 +29,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
   try {
-    const metaResponse = await fetch(getApiBaseUrl() + "/meta/metadata.json");
-    const reportsResponse = await fetch(getApiBaseUrl() + "/reports", {
+    const metaResponse = await fetch(`${getApiBaseUrl()}/meta/metadata.json`);
+    const reportsResponse = await fetch(`${getApiBaseUrl()}/reports`, {
       headers: {
         "x-api-key": process.env.NEXT_PUBLIC_PUBLIC_API_KEY || "",
         "Content-Type": "application/json",
@@ -51,7 +51,7 @@ export default async function Page() {
                 <Text>レポートがありません</Text>
               </VStack>
             )}
-            {reports &&
+            {reports.length > 0 &&
               reports.map((report) => (
                 <Link key={report.slug} href={`/${report.slug}`}>
                   <Card.Root

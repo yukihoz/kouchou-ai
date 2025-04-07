@@ -148,6 +148,8 @@ function Stats({
           {/* https://lucide.dev/icons/message-circle-warning */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
+            role="img"
+            aria-label="コメント数"
             width="30"
             height="30"
             viewBox="0 0 24 24"
@@ -173,6 +175,8 @@ function Stats({
           {/* https://lucide.dev/icons/messages-square */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
+            role="img"
+            aria-label="抽出した議論数"
             width="30"
             height="30"
             viewBox="0 0 24 24"
@@ -195,6 +199,8 @@ function Stats({
           {/* https://lucide.dev/icons/clipboard-check */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
+            role="img"
+            aria-label="集約した意見グループ数"
             width="30"
             height="30"
             viewBox="0 0 24 24"
