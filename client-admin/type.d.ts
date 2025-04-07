@@ -12,7 +12,8 @@ export type Report = {
   status: string,
   title: string
   description: string,
-  isPubcom: boolean
+  isPubcom: boolean,
+  isPublic?: boolean
 }
 
 export type Result = {

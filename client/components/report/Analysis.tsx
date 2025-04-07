@@ -52,7 +52,7 @@ export function Analysis({result}: ReportProps) {
             <Icon mb={2}><MessageCircleWarningIcon size={'30px'}/></Icon>
             <Text className={'headingColor'} fontSize={'3xl'} fontWeight={'bold'} lineHeight={1}
               mb={1}>{result.comment_num.toLocaleString()}</Text>
-            <Text fontSize={'xs'}>意見が含まれるコメント数</Text>
+            <Text fontSize={'xs'}>コメント数</Text>
           </VStack>
         </Tooltip>
         <ChevronRightIcon/>

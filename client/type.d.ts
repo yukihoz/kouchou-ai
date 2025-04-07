@@ -12,6 +12,7 @@ export type Report = {
   status: string,
   title: string
   description: string
+  isPublic?: boolean
 }
 
 export type Result = {
