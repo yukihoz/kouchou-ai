@@ -1,39 +1,39 @@
-import {Cluster} from '@/type'
-import {Box, Heading, Link, Text} from '@chakra-ui/react'
-import {MessagesSquareIcon} from 'lucide-react'
+import type { Cluster } from "@/type";
+import { Box, Heading, Link, Text } from "@chakra-ui/react";
+import { MessagesSquareIcon } from "lucide-react";
 
 type Props = {
-  cluster: Cluster
-}
+  cluster: Cluster;
+};
 
-export function ClusterOverview({cluster}: Props) {
+export function ClusterOverview({ cluster }: Props) {
   return (
-    <Box mx={'auto'} maxW={'750px'} mb={12}>
+    <Box mx={"auto"} maxW={"750px"} mb={12}>
       <Box mb={2}>
         <Link
           id={cluster.label}
           href={`#${cluster.label}`}
-          className={'headingColor'}
-          position={'relative'}
+          className={"headingColor"}
+          position={"relative"}
           _hover={{
-            '&:before': {
+            "&:before": {
               content: '"#"',
-              fontSize: '2xl',
-              position: 'absolute',
-              left: '-1.4rem',
+              fontSize: "2xl",
+              position: "absolute",
+              left: "-1.4rem",
             },
           }}
         >
-          <Heading fontSize={'2xl'} mb={0}>
+          <Heading fontSize={"2xl"} mb={0}>
             {cluster.label}
           </Heading>
         </Link>
-        <Text fontWeight={'bold'} display={'flex'} gap={1} mt={2}>
-          <MessagesSquareIcon size={20}/>
+        <Text fontWeight={"bold"} display={"flex"} gap={1} mt={2}>
+          <MessagesSquareIcon size={20} />
           {cluster.value.toLocaleString()}件
         </Text>
       </Box>
       <Text>{cluster.takeaway}</Text>
     </Box>
-  )
+  );
 }

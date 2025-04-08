@@ -1,7 +1,7 @@
-import {OpImage, size, contentType} from './_op-image'
+import { OpImage, contentType, size } from "./_op-image";
 
-export {size, contentType}
+export { size, contentType };
 
 export default async function Image({ params }: { params: { slug: string } }) {
-  return OpImage(params.slug)
+  return OpImage(params.slug);
 }
