@@ -1,4 +1,4 @@
-# Azure Blob Storage 連携ガイド
+# Azure Blob Storage 移行ガイド
 
 このガイドでは、広聴AIアプリケーションでAzure Blob Storageを使用してレポートデータを永続化する方法について説明します。
 
@@ -11,10 +11,19 @@
 5. [運用コマンド](#運用コマンド)
 
 ## 概要
-
-Azure Container Apps環境では、コンテナが再起動されるとコンテナ内のファイルが失われます。Azure Blob Storageを使用することで、レポートデータを永続的に保存し、コンテナが再起動されても利用可能な状態を維持できます。
+2025-04-08以前に作成されたAzure Container Apps環境では、コンテナが再起動されるとコンテナ内のファイルが失われます。Azure Blob Storageを使用することで、レポートデータを永続的に保存し、コンテナが再起動されても利用可能な状態を維持できます。
 
 ## 環境設定
+
+### 0. 既存レポートのバックアップ
+
+```bash
+python scripts/fetch_reports.py --api-url https://your-api-url
+```
+
+このスクリプトは全てのレポートをローカル環境にダウンロードします。
+
+注: 完了した分析の最終結果データのみを保存します。
 
 ### 1. 環境変数の設定
 
@@ -60,12 +69,6 @@ make azure-create-storage
 
 ```bash
 python scripts/upload_reports_to_azure.py
-```
-
-テストモードでスクリプトを実行して、アップロードされるファイルを確認することもできます：
-
-```bash
-python scripts/upload_reports_to_azure.py --test
 ```
 
 ### 2. APIコンテナの再起動
