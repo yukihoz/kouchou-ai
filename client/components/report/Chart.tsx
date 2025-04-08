@@ -30,6 +30,7 @@ export function Chart({
         left={0}
         right={0}
         bgColor={"#fff"}
+        zIndex={1000}
       >
         <Tooltip content={"全画面終了"} openDelay={0} closeDelay={0}>
           <Button
