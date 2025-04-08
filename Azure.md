@@ -70,6 +70,9 @@ AZURE_BLOB_STORAGE_CONTAINER_NAME=your_container_name
 AZURE_BLOB_STORAGE_ACCOUNT_NAME=your_account_name
 ```
 
+2025年4月時点での各項目の説明を以下に記載します。
+詳細はAzureの公式ドキュメントをご確認ください。
+
 #### AZURE_RESOURCE_GROUP
 - **説明**: Azureリソースグループの名前を指定します。リソースグループは、Azureリソースを論理的にグループ化するためのコンテナです。
 - **設定時の注意事項**:
