@@ -1,11 +1,12 @@
-import { Argument, Cluster } from '@/type'
-import { ChartCore } from './ChartCore'
+import { Argument, Cluster } from '@/type';
+import { ChartCore } from './ChartCore';
+
 
 type Props = {
-  clusterList: Cluster[]
-  argumentList: Argument[]
-  targetLevel: number
-}
+  clusterList: Cluster[];
+  argumentList: Argument[];
+  targetLevel: number;
+};
 
 export function ScatterChart({clusterList, argumentList, targetLevel}: Props) {
   const targetClusters = clusterList.filter((cluster) => cluster.level === targetLevel)
@@ -21,14 +22,19 @@ export function ScatterChart({clusterList, argumentList, targetLevel}: Props) {
 
   // クラスタごとのデータを構築
   const clusterData = targetClusters.map((cluster) => {
-    const clusterArguments = argumentList.filter((arg) => arg.cluster_ids.includes(cluster.id))
-    const xValues = clusterArguments.map((arg) => arg.x)
-    const yValues = clusterArguments.map((arg) => arg.y)
-    const texts = clusterArguments.map((arg) => `<b>${cluster.label}</b><br>${arg.argument.replace(/(.{30})/g, '$1<br />')}`)
+    const clusterArguments = argumentList.filter((arg) =>
+      arg.cluster_ids.includes(cluster.id),
+    );
+    const xValues = clusterArguments.map((arg) => arg.x);
+    const yValues = clusterArguments.map((arg) => arg.y);
+    const texts = clusterArguments.map(
+      (arg) =>
+        `<b>${cluster.label}</b><br>${arg.argument.replace(/(.{30})/g, "$1<br />")}`,
+    );
 
     // クラスタ中心の座標を計算
-    const centerX = xValues.reduce((sum, val) => sum + val, 0) / xValues.length
-    const centerY = yValues.reduce((sum, val) => sum + val, 0) / yValues.length
+    const centerX = xValues.reduce((sum, val) => sum + val, 0) / xValues.length;
+    const centerY = yValues.reduce((sum, val) => sum + val, 0) / yValues.length;
 
     return {
       cluster,
@@ -37,50 +43,50 @@ export function ScatterChart({clusterList, argumentList, targetLevel}: Props) {
       texts,
       centerX,
       centerY,
-    }
-  })
+    };
+  });
 
   return (
     <ChartCore
       data={clusterData.map((data) => ({
         x: data.xValues,
         y: data.yValues,
-        mode: 'markers',
+        mode: "markers",
         marker: {
           size: 7,
           color: clusterColorMap[data.cluster.id],
         },
-        type: 'scatter',
+        type: "scatter",
         text: data.texts,
-        hoverinfo: 'text',
+        hoverinfo: "text",
         hoverlabel: {
-          align: 'left',
-          bgcolor: 'white',
+          align: "left",
+          bgcolor: "white",
           bordercolor: clusterColorMap[data.cluster.id],
           font: {
             size: 12,
-            color: '#333',
+            color: "#333",
           },
         },
       }))}
       layout={{
-        margin: {l: 0, r: 0, b: 0, t: 0},
+        margin: { l: 0, r: 0, b: 0, t: 0 },
         xaxis: {
           zeroline: false,
-          showticklabels: false
+          showticklabels: false,
         },
         yaxis: {
           zeroline: false,
-          showticklabels: false
+          showticklabels: false,
         },
-        hovermode: 'closest',
+        hovermode: "closest",
         annotations: clusterData.map((data) => ({
           x: data.centerX,
           y: data.centerY,
           text: data.cluster.label,
           showarrow: false,
           font: {
-            color: 'white',
+            color: "white",
             size: 14,
             weight: 700,
           },
@@ -93,12 +99,12 @@ export function ScatterChart({clusterList, argumentList, targetLevel}: Props) {
         showlegend: false,
       }}
       useResizeHandler={true}
-      style={{width: '100%', height: '100%'}}
+      style={{ width: "100%", height: "100%" }}
       config={{
         responsive: true,
         displayModeBar: false,
-        locale: 'ja',
+        locale: "ja",
       }}
     />
-  )
+  );
 }
