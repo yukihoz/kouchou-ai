@@ -8,10 +8,11 @@
   "files": {
     "ignoreUnknown": false,
     "ignore": [
-      "client",
       "client-admin",
       "server",
       ".next",
+      "node_modules",
+      "out",
       "hierarchical_result.json"
     ]
   },
