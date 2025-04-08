@@ -17,6 +17,8 @@ def load_status() -> None:
             _report_status = json.load(f)
     except FileNotFoundError:
         _report_status = {}
+    except json.JSONDecodeError:
+        _report_status = {}
 
 
 def load_status_as_reports(include_deleted: bool = False) -> list[Report]:
@@ -39,6 +41,10 @@ def load_status_as_reports(include_deleted: bool = False) -> list[Report]:
 
 def save_status() -> None:
     with _lock:
+        # ディレクトリが存在しない場合は作成
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+        # ローカルに保存
         with open(STATE_FILE, "w") as f:
             json.dump(_report_status, f, indent=4, ensure_ascii=False)
 
