@@ -1,6 +1,5 @@
-import React from 'react'
-import {ChartCore} from './ChartCore'
-import {Argument, Cluster} from '@/type'
+import { Argument, Cluster } from '@/type'
+import { ChartCore } from './ChartCore'
 
 type Props = {
   clusterList: Cluster[]
@@ -10,7 +9,11 @@ type Props = {
 
 export function ScatterChart({clusterList, argumentList, targetLevel}: Props) {
   const targetClusters = clusterList.filter((cluster) => cluster.level === targetLevel)
-  const softColors = ['#7ac943', '#3fa9f5', '#ff7997', '#e0dd02', '#d6410f', '#b39647', '#7cccc3', '#a147e6']
+  const softColors = [
+    '#7ac943', '#3fa9f5', '#ff7997', '#e0dd02', '#d6410f', '#b39647', '#7cccc3', '#a147e6',
+    '#ff6b6b', '#4ecdc4', '#ffbe0b', '#fb5607', '#8338ec', '#3a86ff', '#ff006e', '#8ac926',
+    '#1982c4', '#6a4c93', '#f72585', '#7209b7', 
+  ]
   const clusterColorMap = targetClusters.reduce((acc, cluster, index) => {
     acc[cluster.id] = softColors[index % softColors.length]
     return acc
