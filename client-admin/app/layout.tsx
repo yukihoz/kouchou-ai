@@ -19,7 +19,7 @@ export default function RootLayout({
       <head>
         <link
           rel={"icon"}
-          href={process.env.NEXT_PUBLIC_API_BASEPATH + "/meta/icon.png"}
+          href={`${process.env.NEXT_PUBLIC_API_BASEPATH}/meta/icon.png`}
           sizes={"any"}
         />
       </head>

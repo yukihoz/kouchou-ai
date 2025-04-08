@@ -11,7 +11,7 @@ export function Header() {
     >
       <HStack>
         <Image
-          src={process.env.NEXT_PUBLIC_API_BASEPATH + "/meta/reporter.png"}
+          src={`${process.env.NEXT_PUBLIC_API_BASEPATH}/meta/reporter.png`}
           mx={"auto"}
           objectFit={"cover"}
           maxH={{ base: "40px", md: "60px" }}

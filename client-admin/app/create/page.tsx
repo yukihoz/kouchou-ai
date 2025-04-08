@@ -106,7 +106,7 @@ export default function Page() {
     setSpreadsheetLoading(true);
     try {
       const response = await fetch(
-        process.env.NEXT_PUBLIC_API_BASEPATH + "/admin/spreadsheet/import",
+        `${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/spreadsheet/import`,
         {
           method: "POST",
           headers: {
@@ -313,7 +313,7 @@ export default function Page() {
       console.log("送信されるJSON:", payload);
 
       const response = await fetch(
-        process.env.NEXT_PUBLIC_API_BASEPATH + "/admin/reports",
+        `${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/reports`,
         {
           method: "POST",
           headers: {
@@ -696,7 +696,7 @@ export default function Page() {
                     max={10}
                     onChange={(e) => {
                       const v = Number(e.target.value);
-                      if (!isNaN(v)) {
+                      if (!Number.isNaN(v)) {
                         setClusterLv1(Math.max(2, Math.min(10, v)));
                       }
                     }}
@@ -725,7 +725,7 @@ export default function Page() {
                     max={1000}
                     onChange={(e) => {
                       const v = Number(e.target.value);
-                      if (!isNaN(v)) {
+                      if (!Number.isNaN(v)) {
                         setClusterLv2(Math.max(2, Math.min(1000, v)));
                       }
                     }}
@@ -761,7 +761,7 @@ export default function Page() {
                     max={100}
                     onChange={(e) => {
                       const v = Number(e.target.value);
-                      if (!isNaN(v)) {
+                      if (!Number.isNaN(v)) {
                         setWorkers(Math.max(1, Math.min(100, v)));
                       }
                     }}

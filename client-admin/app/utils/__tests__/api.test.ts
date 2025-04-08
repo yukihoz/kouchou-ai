@@ -41,7 +41,7 @@ describe("getApiBaseUrl", () => {
       writable: true,
     });
 
-    delete process.env.API_BASEPATH;
+    process.env.API_BASEPATH = undefined;
     process.env.NEXT_PUBLIC_API_BASEPATH = "https://example.com/api";
 
     expect(getApiBaseUrl()).toBe("https://example.com/api");

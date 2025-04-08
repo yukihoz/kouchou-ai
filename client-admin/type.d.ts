@@ -20,7 +20,9 @@ export type Result = {
   arguments: Argument[]; // 抽出された意見のリスト
   clusters: Cluster[]; // クラスタ情報
   comments: Comments; // コメント情報
+  // biome-ignore lint/suspicious/noExplicitAny:
   propertyMap: Record<string, any>; // プロパティマッピング情報
+  // biome-ignore lint/suspicious/noExplicitAny:
   translations: Record<string, any>; // 翻訳情報
   overview: string; // 解析概要
   config: Config; // 設定情報

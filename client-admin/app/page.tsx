@@ -47,14 +47,14 @@ const stepKeys = [
 ];
 
 const steps = [
-  { title: "抽出", description: "データの抽出" },
-  { title: "埋め込み", description: "埋め込み表現の生成" },
-  { title: "クラスタリング", description: "階層的クラスタリングの実施" },
-  { title: "初期ラベリング", description: "初期ラベルの付与" },
-  { title: "統合ラベリング", description: "ラベルの統合" },
-  { title: "概要生成", description: "概要の作成" },
-  { title: "集約", description: "結果の集約" },
-  { title: "可視化", description: "結果の可視化" },
+  { id: 1, title: "抽出", description: "データの抽出" },
+  { id: 2, title: "埋め込み", description: "埋め込み表現の生成" },
+  { id: 3, title: "クラスタリング", description: "階層的クラスタリングの実施" },
+  { id: 4, title: "初期ラベリング", description: "初期ラベルの付与" },
+  { id: 5, title: "統合ラベリング", description: "ラベルの統合" },
+  { id: 6, title: "概要生成", description: "概要の作成" },
+  { id: 7, title: "集約", description: "結果の集約" },
+  { id: 8, title: "可視化", description: "結果の可視化" },
 ];
 
 // ステータスに応じた表示内容を返す関数
@@ -96,8 +96,7 @@ function useReportProgressPoll(slug: string, shouldSubscribe: boolean) {
     async function poll() {
       try {
         const response = await fetch(
-          process.env.NEXT_PUBLIC_API_BASEPATH +
-            `/admin/reports/${slug}/status/step-json`,
+          `${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/reports/${slug}/status/step-json`,
           {
             headers: {
               "x-api-key": process.env.NEXT_PUBLIC_ADMIN_API_KEY || "",
@@ -195,7 +194,7 @@ function ReportCard({
                         const isCompleted = index < currentStepIndex;
                         return (
                           <Steps.Item
-                            key={index}
+                            key={step.id}
                             index={index}
                             title={step.title}
                           >
@@ -240,7 +239,7 @@ function ReportCard({
                   onClick={async () => {
                     try {
                       const response = await fetch(
-                        getApiBaseUrl() + `/admin/comments/${report.slug}/csv`,
+                        `${getApiBaseUrl()}/admin/comments/${report.slug}/csv`,
                         {
                           headers: {
                             "x-api-key":
@@ -285,8 +284,7 @@ function ReportCard({
                       onClick={async () => {
                         try {
                           const response = await fetch(
-                            getApiBaseUrl() +
-                              `/admin/reports/${report.slug}/visibility`,
+                            `${getApiBaseUrl()}/admin/reports/${report.slug}/visibility`,
                             {
                               method: "PATCH",
                               headers: {
@@ -389,7 +387,7 @@ export default function Page() {
   useEffect(() => {
     (async () => {
       const response = await fetch(
-        process.env.NEXT_PUBLIC_API_BASEPATH + "/admin/reports",
+        `${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/reports`,
         {
           method: "GET",
           headers: {
@@ -424,6 +422,7 @@ export default function Page() {
           </VStack>
         )}
         {reports &&
+          reports.length > 0 &&
           reports.map((report) => (
             <ReportCard
               key={report.slug}
