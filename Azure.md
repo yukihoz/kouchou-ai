@@ -30,8 +30,6 @@
 cp .env.example .env
 ```
 
-特に以下の環境変数は重要です：
-
 ```
 # API認証用キー
 PUBLIC_API_KEY=your_public_key
@@ -45,7 +43,7 @@ BASIC_AUTH_PASSWORD=your_password
 OPENAI_API_KEY=your_openai_key
 ```
 
-また、Azure環境設定をカスタマイズする必要がある場合は、オプションで`.env.azure`ファイルを作成することができます。このファイルは必須ではなく、作成しなくても自動的にデフォルト値が使用されます。
+次に、以下の手順で `.env.azure` を作成し、Azure環境で用いる環境変数を設定してください。
 
 ```bash
 cp .env.azure.example .env.azure
