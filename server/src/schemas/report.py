@@ -7,6 +7,7 @@ class ReportStatus(Enum):
     PROCESSING = "processing"
     READY = "ready"
     ERROR = "error"
+    DELETED = "deleted"
 
 
 class Report(SchemaBaseModel):
@@ -16,3 +17,4 @@ class Report(SchemaBaseModel):
     status: ReportStatus
     is_pubcom: bool = False
     is_public: bool = True  # デフォルトは公開状態
+    created_at: str | None = None  # 作成日時
