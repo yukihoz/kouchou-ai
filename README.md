@@ -40,6 +40,16 @@
   * 環境変数（.env）を編集した場合は、`docker-compose down` を実行した後、 `docker-compose up --build` を実行してアプリケーションを起動してください
     * 一部の環境変数はDockerイメージのビルド時に埋め込まれているため、環境変数を変更した場合はビルドの再実行が必要となります
 
+### Google Analytics の設定
+* Google Analytics 4（GA4）を使用して、ユーザーのアクセス解析を行うことができます
+* 設定手順:
+  1. Google Analytics アカウントを作成し、データストリームを設定して測定IDを取得します（G-XXXXXXXXXXの形式）
+  2. `.env` ファイルに以下の環境変数を設定します:
+     * `NEXT_PUBLIC_GA_MEASUREMENT_ID`: クライアントアプリ（ポート3000）用の測定ID
+     * `NEXT_PUBLIC_ADMIN_GA_MEASUREMENT_ID`: 管理画面アプリ（ポート4000）用の測定ID
+  3. 本番環境（`ENVIRONMENT=production` または `NODE_ENV=production`）でのみGoogle Analyticsが有効になります
+     * 開発環境では自動的に無効化されるため、開発中のアクセスはカウントされません
+
 アプリ起動後の、アプリの操作方法については[広聴AIの使い方](./how_to_use/README.md)を参照
 
 ### メタデータファイルのセットアップ
