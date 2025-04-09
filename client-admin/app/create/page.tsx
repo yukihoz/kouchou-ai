@@ -73,6 +73,7 @@ export default function Page() {
   const [csvColumns, setCsvColumns] = useState<string[]>([]);
   const [selectedCommentColumn, setSelectedCommentColumn] =
     useState<string>("");
+  const [recommendedClusters, setRecommendedClusters] = useState<{ lv1: number, lv2: number } | null>(null);
   const [autoAdjusted, setAutoAdjusted] = useState<boolean>(false);
 
   // IDのバリデーション関数
@@ -88,6 +89,13 @@ export default function Page() {
     const newId = e.target.value;
     setInput(newId);
     setIsIdValid(isValidId(newId));
+  };
+
+  const calculateRecommendedClusters = (commentCount: number) => {
+    const lv1 = Math.max(2, Math.min(20, Math.round(Math.cbrt(commentCount))));
+    const lv2 = Math.max(2, Math.min(1000, Math.round(lv1 * lv1)));
+    
+    return { lv1, lv2 };
   };
 
   const canImport = spreadsheetUrl.trim() && isIdValid && !spreadsheetImported;
@@ -158,6 +166,8 @@ export default function Page() {
       if (commentData.comments.length > 0) {
         setCsvColumns(Object.keys(commentData.comments[0]));
       }
+      
+      setRecommendedClusters(calculateRecommendedClusters(commentData.comments.length));
 
       toaster.create({
         type: "success",
@@ -374,6 +384,7 @@ export default function Page() {
           if (columns.includes("comment")) {
             setSelectedCommentColumn("comment");
           }
+          setRecommendedClusters(calculateRecommendedClusters(parsed.length))
         }
       });
     } else if (newType === "spreadsheet" && spreadsheetData.length > 0) {
@@ -383,10 +394,12 @@ export default function Page() {
       if (columns.includes("comment")) {
         setSelectedCommentColumn("comment");
       }
+      setRecommendedClusters(calculateRecommendedClusters(spreadsheetData.length));
     } else {
       // データがない場合はカラムリセット
       setCsvColumns([]);
       setSelectedCommentColumn("");
+      setRecommendedClusters(null);
     }
   };
 
@@ -469,6 +482,7 @@ export default function Page() {
                             if (columns.includes("comment")) {
                               setSelectedCommentColumn("comment");
                             }
+                            setRecommendedClusters(calculateRecommendedClusters(parsed.length))
                           }
                         }
                       }}
@@ -484,7 +498,12 @@ export default function Page() {
                       </Box>
                       <FileUploadList
                         clearable={true}
-                        onRemove={() => setCsv(null)}
+                        onRemove={() => {
+                          setCsv(null)
+                          setCsvColumns([])
+                          setSelectedCommentColumn('')
+                          setRecommendedClusters(null)
+                        }}
                       />
                     </FileUploadRoot>
                     {csvColumns.length > 0 && (
@@ -508,6 +527,30 @@ export default function Page() {
                         </NativeSelect.Root>
                         <Field.HelperText>
                           分析対象のコメントが含まれるカラムを選んでください（それ以外のカラムは無視されます）。
+                        </Field.HelperText>
+                      </Field.Root>
+                    )}
+                    
+                    {recommendedClusters && (
+                      <Field.Root mt={4}>
+                        <Field.Label>おすすめクラスタ数設定</Field.Label>
+                        <HStack>
+                          <Text>
+                            {recommendedClusters.lv1}→{recommendedClusters.lv2}
+                          </Text>
+                          <Button 
+                            onClick={() => {
+                              setClusterLv1(recommendedClusters.lv1)
+                              setClusterLv2(recommendedClusters.lv2)
+                            }}
+                            size="sm"
+                            colorScheme="blue"
+                          >
+                            この設定にする
+                          </Button>
+                        </HStack>
+                        <Field.HelperText>
+                          コメント数に基づいた推奨クラスタ数です。「AI詳細設定」でも変更できます。
                         </Field.HelperText>
                       </Field.Root>
                     )}
@@ -569,6 +612,31 @@ export default function Page() {
                           </Field.HelperText>
                         </Field.Root>
                       )}
+                      
+                      {recommendedClusters && (
+                        <Field.Root mt={4}>
+                          <Field.Label>おすすめクラスタ数設定</Field.Label>
+                          <HStack>
+                            <Text>
+                              {recommendedClusters.lv1}→{recommendedClusters.lv2}
+                            </Text>
+                            <Button 
+                              onClick={() => {
+                                setClusterLv1(recommendedClusters.lv1)
+                                setClusterLv2(recommendedClusters.lv2)
+                              }}
+                              size="sm"
+                              colorScheme="blue"
+                            >
+                              この設定にする
+                            </Button>
+                          </HStack>
+                          <Field.HelperText>
+                            コメント数に基づいた推奨クラスタ数です。「AI詳細設定」でも変更できます。
+                          </Field.HelperText>
+                        </Field.Root>
+                      )}
+
                     </Field.Root>
                     {spreadsheetImported && (
                       <Text color="green.500" fontSize="sm">
