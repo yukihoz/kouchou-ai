@@ -92,7 +92,7 @@ export default function Page() {
   };
 
   const calculateRecommendedClusters = (commentCount: number) => {
-    const lv1 = Math.max(2, Math.min(10, Math.round(Math.cbrt(commentCount))));
+    const lv1 = Math.max(2, Math.min(20, Math.round(Math.cbrt(commentCount))));
     const lv2 = Math.max(2, Math.min(1000, Math.round(lv1 * lv1)));
     
     return { lv1, lv2 };
