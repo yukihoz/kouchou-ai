@@ -1,9 +1,10 @@
 import json
 import threading
+from datetime import datetime
 
 from src.config import settings
 from src.schemas.admin_report import ReportInput
-from src.schemas.report import Report
+from src.schemas.report import Report, ReportStatus
 
 STATE_FILE = settings.DATA_DIR / "report_status.json"
 _lock = threading.RLock()
@@ -21,7 +22,7 @@ def load_status() -> None:
         _report_status = {}
 
 
-def load_status_as_reports() -> list[Report]:
+def load_status_as_reports(include_deleted: bool = False) -> list[Report]:
     global _report_status
     try:
         with open(STATE_FILE) as f:
@@ -31,7 +32,12 @@ def load_status_as_reports() -> list[Report]:
     except json.JSONDecodeError:
         _report_status = {}
 
-    return [Report(**report) for report in _report_status.values()]
+    reports = [Report(**report) for report in _report_status.values()]
+
+    if not include_deleted:
+        reports = [report for report in reports if report.status != ReportStatus.DELETED]
+
+    return reports
 
 
 def save_status() -> None:
@@ -53,6 +59,7 @@ def add_new_report_to_status(report_input: ReportInput) -> None:
             "description": report_input.intro,
             "is_pubcom": report_input.is_pubcom,
             "is_public": True,  # デフォルトは公開状態
+            "created_at": datetime.now().isoformat(),  # 現在の日時をISO形式で追加
         }
         save_status()
 

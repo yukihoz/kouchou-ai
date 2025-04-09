@@ -1,5 +1,5 @@
 body {
-  font-family: 'Roboto', 'Noto Sans JP', sans-serif;
+  font-family: "Roboto", "Noto Sans JP", sans-serif;
   margin: 0;
   border: 0;
   background: linear-gradient(to right, #1e1e1e, #3c3c3c);
@@ -27,12 +27,20 @@ footer {
 
 .gradientBg {
   color: #ffffff;
-  background: linear-gradient(90deg, rgb(37, 160, 57) 0%, rgb(37, 119, 177) 100%);
+  background: linear-gradient(
+    90deg,
+    rgb(37, 160, 57) 0%,
+    rgb(37, 119, 177) 100%
+  );
 }
 
 .gradientColor {
   color: transparent;
-  background: linear-gradient(90deg, rgb(37, 160, 57) 0%, rgb(37, 119, 177) 100%);
+  background: linear-gradient(
+    90deg,
+    rgb(37, 160, 57) 0%,
+    rgb(37, 119, 177) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

@@ -8,7 +8,6 @@
   "files": {
     "ignoreUnknown": false,
     "ignore": [
-      "client-admin",
       "server",
       ".next",
       "node_modules",

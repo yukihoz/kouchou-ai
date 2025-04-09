@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import dynamic from 'next/dynamic'
+import dynamic from "next/dynamic";
 
 // NOTE
 // Next.js v15 と ChakraUI v3 で hydration error を回避するためのコンポーネント
@@ -8,14 +8,16 @@ import dynamic from 'next/dynamic'
 // https://github.com/chakra-ui/chakra-ui/discussions/9051
 
 const Provider = dynamic(
-  () => import('@/components/ui/provider').then((mod) => mod.Provider),
+  () => import("@/components/ui/provider").then((mod) => mod.Provider),
   {
     ssr: false,
-  }
-)
+  },
+);
 
-export default function ClientProvider({children}: {
-  children: React.ReactNode
+export default function ClientProvider({
+  children,
+}: {
+  children: React.ReactNode;
 }) {
-  return <Provider>{children}</Provider>
+  return <Provider>{children}</Provider>;
 }
