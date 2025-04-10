@@ -183,6 +183,15 @@ function ReportCard({
               <Card.Description>
                 {`${process.env.NEXT_PUBLIC_CLIENT_BASEPATH}/${report.slug}`}
               </Card.Description>
+              {report.createdAt && (
+                <Text fontSize="xs" color="gray.500" mb={1}>
+                  作成日時:{" "}
+                  {new Date(report.createdAt).toLocaleString(
+                    "ja-JP",
+                    { timeZone: "Asia/Tokyo" },
+                  )}
+                </Text>
+              )}
               {report.status !== "ready" && (
                 <Box mt={2}>
                   <Steps.Root
