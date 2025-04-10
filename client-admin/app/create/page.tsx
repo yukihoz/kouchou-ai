@@ -73,7 +73,10 @@ export default function Page() {
   const [csvColumns, setCsvColumns] = useState<string[]>([]);
   const [selectedCommentColumn, setSelectedCommentColumn] =
     useState<string>("");
-  const [recommendedClusters, setRecommendedClusters] = useState<{ lv1: number, lv2: number } | null>(null);
+  const [recommendedClusters, setRecommendedClusters] = useState<{
+    lv1: number;
+    lv2: number;
+  } | null>(null);
   const [autoAdjusted, setAutoAdjusted] = useState<boolean>(false);
 
   // IDのバリデーション関数
@@ -94,7 +97,7 @@ export default function Page() {
   const calculateRecommendedClusters = (commentCount: number) => {
     const lv1 = Math.max(2, Math.min(20, Math.round(Math.cbrt(commentCount))));
     const lv2 = Math.max(2, Math.min(1000, Math.round(lv1 * lv1)));
-    
+
     return { lv1, lv2 };
   };
 
@@ -166,8 +169,10 @@ export default function Page() {
       if (commentData.comments.length > 0) {
         setCsvColumns(Object.keys(commentData.comments[0]));
       }
-      
-      setRecommendedClusters(calculateRecommendedClusters(commentData.comments.length));
+
+      setRecommendedClusters(
+        calculateRecommendedClusters(commentData.comments.length),
+      );
 
       toaster.create({
         type: "success",
@@ -384,7 +389,7 @@ export default function Page() {
           if (columns.includes("comment")) {
             setSelectedCommentColumn("comment");
           }
-          setRecommendedClusters(calculateRecommendedClusters(parsed.length))
+          setRecommendedClusters(calculateRecommendedClusters(parsed.length));
         }
       });
     } else if (newType === "spreadsheet" && spreadsheetData.length > 0) {
@@ -394,7 +399,9 @@ export default function Page() {
       if (columns.includes("comment")) {
         setSelectedCommentColumn("comment");
       }
-      setRecommendedClusters(calculateRecommendedClusters(spreadsheetData.length));
+      setRecommendedClusters(
+        calculateRecommendedClusters(spreadsheetData.length),
+      );
     } else {
       // データがない場合はカラムリセット
       setCsvColumns([]);
@@ -482,7 +489,9 @@ export default function Page() {
                             if (columns.includes("comment")) {
                               setSelectedCommentColumn("comment");
                             }
-                            setRecommendedClusters(calculateRecommendedClusters(parsed.length))
+                            setRecommendedClusters(
+                              calculateRecommendedClusters(parsed.length),
+                            );
                           }
                         }
                       }}
@@ -499,10 +508,10 @@ export default function Page() {
                       <FileUploadList
                         clearable={true}
                         onRemove={() => {
-                          setCsv(null)
-                          setCsvColumns([])
-                          setSelectedCommentColumn('')
-                          setRecommendedClusters(null)
+                          setCsv(null);
+                          setCsvColumns([]);
+                          setSelectedCommentColumn("");
+                          setRecommendedClusters(null);
                         }}
                       />
                     </FileUploadRoot>
@@ -530,7 +539,7 @@ export default function Page() {
                         </Field.HelperText>
                       </Field.Root>
                     )}
-                    
+
                     {recommendedClusters && (
                       <Field.Root mt={4}>
                         <Field.Label>おすすめクラスタ数設定</Field.Label>
@@ -538,10 +547,10 @@ export default function Page() {
                           <Text>
                             {recommendedClusters.lv1}→{recommendedClusters.lv2}
                           </Text>
-                          <Button 
+                          <Button
                             onClick={() => {
-                              setClusterLv1(recommendedClusters.lv1)
-                              setClusterLv2(recommendedClusters.lv2)
+                              setClusterLv1(recommendedClusters.lv1);
+                              setClusterLv2(recommendedClusters.lv2);
                             }}
                             size="sm"
                             colorScheme="blue"
@@ -612,18 +621,19 @@ export default function Page() {
                           </Field.HelperText>
                         </Field.Root>
                       )}
-                      
+
                       {recommendedClusters && (
                         <Field.Root mt={4}>
                           <Field.Label>おすすめクラスタ数設定</Field.Label>
                           <HStack>
                             <Text>
-                              {recommendedClusters.lv1}→{recommendedClusters.lv2}
+                              {recommendedClusters.lv1}→
+                              {recommendedClusters.lv2}
                             </Text>
-                            <Button 
+                            <Button
                               onClick={() => {
-                                setClusterLv1(recommendedClusters.lv1)
-                                setClusterLv2(recommendedClusters.lv2)
+                                setClusterLv1(recommendedClusters.lv1);
+                                setClusterLv2(recommendedClusters.lv2);
                               }}
                               size="sm"
                               colorScheme="blue"
@@ -636,7 +646,6 @@ export default function Page() {
                           </Field.HelperText>
                         </Field.Root>
                       )}
-
                     </Field.Root>
                     {spreadsheetImported && (
                       <Text color="green.500" fontSize="sm">
