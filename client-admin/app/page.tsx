@@ -87,13 +87,23 @@ function getStatusDisplay(status: string) {
 // カスタムフック：fetchを用いて指定レポートの進捗を定期ポーリングで取得
 function useReportProgressPoll(slug: string, shouldSubscribe: boolean) {
   const [progress, setProgress] = useState<string>("loading");
+  const [errorStep, setErrorStep] = useState<string | null>(null);
+  const [lastValidStep, setLastValidStep] = useState<string>("loading");
+  const [isPolling, setIsPolling] = useState<boolean>(true);
+
+  // hasReloaded のデフォルト値を false に設定
+  const [hasReloaded, setHasReloaded] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!shouldSubscribe) return;
+    if (!shouldSubscribe || !isPolling) return;
 
     let cancelled = false;
+    let retryCount = 0;
+    const maxRetries = 10;
 
     async function poll() {
+      if (cancelled) return;
+
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASEPATH}/admin/reports/${slug}/status/step-json`,
@@ -101,32 +111,85 @@ function useReportProgressPoll(slug: string, shouldSubscribe: boolean) {
             headers: {
               "x-api-key": process.env.NEXT_PUBLIC_ADMIN_API_KEY || "",
               "Content-Type": "application/json",
+              // キャッシュを防止するためのヘッダーを追加
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              "Pragma": "no-cache"
             },
           },
         );
+
         if (response.ok) {
           const data = await response.json();
+
+          if (!data.current_step || data.current_step === "loading") {
+            retryCount = 0;
+            setTimeout(poll, 3000);
+            return;
+          }
+
+          if (data.current_step === "error") {
+            setErrorStep(data.error_step || lastValidStep);
+            setProgress("error");
+            setIsPolling(false);
+            return;
+          }
+
+          setLastValidStep(data.current_step);
+          setErrorStep(null);
           setProgress(data.current_step);
-          // もし 'completed' ならポーリングを終了する（以降更新しない）
-          if (data.current_step === "completed") return;
+
+          if (data.current_step === "completed") {
+            setIsPolling(false);
+            return;
+          }
+
+          // 正常なレスポンスの場合は次のポーリングをスケジュール
+          setTimeout(poll, 3000);
         } else {
-          setProgress("error");
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            console.error("Maximum retry attempts reached");
+            setProgress("error");
+            setIsPolling(false);
+            return;
+          }
+          const retryInterval = retryCount < 3 ? 2000 : 5000;
+          setTimeout(poll, retryInterval);
         }
-      } catch (_error) {
-        setProgress("error");
-      }
-      if (!cancelled) {
+      } catch (error) {
+        console.error("Polling error:", error);
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          setProgress("error");
+          setIsPolling(false);
+          return;
+        }
         setTimeout(poll, 5000);
       }
     }
+
     poll();
 
     return () => {
       cancelled = true;
     };
-  }, [slug, shouldSubscribe]);
+  }, [slug, shouldSubscribe, lastValidStep, isPolling]);
 
-  return progress;
+  useEffect(() => {
+    // 完了またはエラーでかつリロード済みでない場合
+    if ((progress === "completed" || progress === "error") && !hasReloaded) {
+
+      setHasReloaded(true);
+
+      const reloadTimeout = setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+
+      return () => clearTimeout(reloadTimeout);
+    }
+  }, [progress, hasReloaded]);
+
+  return { progress, errorStep };
 }
 
 // 個々のレポートカードコンポーネント
@@ -140,12 +203,11 @@ function ReportCard({
   setReports?: (reports: Report[] | undefined) => void;
 }) {
   const statusDisplay = getStatusDisplay(report.status);
-  // report.status が 'ready' でない場合はポーリングを有効にする
-  const progress = useReportProgressPoll(
+  const { progress, errorStep } = useReportProgressPoll(
     report.slug,
     report.status !== "ready",
   );
-  // progress が 'completed' なら、currentStepIndex を全ステップ完了として設定
+
   const currentStepIndex =
     progress === "completed"
       ? steps.length
@@ -153,30 +215,50 @@ function ReportCard({
         ? 0
         : stepKeys.indexOf(progress);
 
-  // progress が 'completed' になったらページを1秒後にリロード
-  useEffect(() => {
-    if (progress === "completed") {
-      setTimeout(() => window.location.reload(), 1000);
-    }
-  }, [progress]);
+  const [lastProgress, setLastProgress] = useState<string | null>(null);
 
+  // エラー状態の判定
+  const isErrorState = progress === "error" || report.status === "error";
+
+  // progress が変更されたときにレポート状態を更新
+  useEffect(() => {
+    if ((progress === "completed" || progress === "error") && progress !== lastProgress) {
+      setLastProgress(progress);
+
+      if (progress === "completed" && setReports) {
+        const updatedReports = reports?.map((r) =>
+          r.slug === report.slug ? { ...r, status: "ready" } : r
+        );
+        setReports(updatedReports);
+      } else if (progress === "error" && setReports) {
+        const updatedReports = reports?.map((r) =>
+          r.slug === report.slug ? { ...r, status: "error" } : r
+        );
+        setReports(updatedReports);
+      }
+    }
+  }, [progress, lastProgress, reports, setReports, report.slug]);
   return (
     <Card.Root
       size="md"
       key={report.slug}
       mb={4}
       borderLeftWidth={10}
-      borderLeftColor={statusDisplay.borderColor}
+      borderLeftColor={isErrorState ? "red.600" : statusDisplay.borderColor}
     >
       <Card.Body>
         <HStack justify="space-between">
           <HStack>
-            <Box mr={3} color={statusDisplay.iconColor}>
-              {statusDisplay.icon}
+            <Box mr={3} color={isErrorState ? "red.600" : statusDisplay.iconColor}>
+              {isErrorState ? (
+                <CircleAlertIcon size={30} />
+              ) : (
+                statusDisplay.icon
+              )}
             </Box>
             <Box>
               <Card.Title>
-                <Text fontSize="md" color={statusDisplay.textColor}>
+                <Text fontSize="md" color={isErrorState ? "red.600" : statusDisplay.textColor}>
                   {report.title}
                 </Text>
               </Card.Title>
@@ -201,6 +283,15 @@ function ReportCard({
                     <Steps.List>
                       {steps.map((step, index) => {
                         const isCompleted = index < currentStepIndex;
+
+                        const stepColor = (() => {
+                          if (progress === "error" && index === currentStepIndex) {
+                            return "red.500";
+                          }
+                          if (isCompleted) return "green.500";
+                          return "gray.300";
+                        })();
+
                         return (
                           <Steps.Item
                             key={step.id}
@@ -210,22 +301,22 @@ function ReportCard({
                             <Flex direction="column" align="center">
                               <Steps.Indicator
                                 boxSize="24px"
-                                bg={isCompleted ? "green.500" : "gray.300"}
+                                bg={stepColor}
+                                position="relative"
                               />
                               <Steps.Title
                                 mt={1}
                                 fontSize="sm"
                                 whiteSpace="nowrap"
                                 textAlign="center"
-                                color={isCompleted ? "green.500" : "gray.300"}
+                                color={stepColor}
+                                fontWeight={progress === "error" && index === currentStepIndex ? "bold" : "normal"}
                               >
                                 {step.title}
                               </Steps.Title>
                             </Flex>
                             <Steps.Separator
-                              borderColor={
-                                isCompleted ? "green.500" : "gray.300"
-                              }
+                              borderColor={stepColor}
                             />
                           </Steps.Item>
                         );
@@ -258,7 +349,8 @@ function ReportCard({
                         },
                       );
                       if (!response.ok) {
-                        throw new Error("CSVダウンロード失敗");
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || "CSV ダウンロードに失敗しました");
                       }
                       const blob = await response.blob();
                       const url = window.URL.createObjectURL(blob);
@@ -269,7 +361,6 @@ function ReportCard({
                       window.URL.revokeObjectURL(url);
                     } catch (error) {
                       console.error(error);
-                      alert("CSVのダウンロードに失敗しました");
                     }
                   }}
                 >
@@ -304,7 +395,8 @@ function ReportCard({
                             },
                           );
                           if (!response.ok) {
-                            throw new Error("公開状態の変更に失敗しました");
+                            const errorData = await response.json();
+                            throw new Error(errorData.detail || "公開状態の変更に失敗しました");
                           }
                           const data = await response.json();
                           const updatedReports = reports?.map((r) =>
@@ -317,7 +409,6 @@ function ReportCard({
                           }
                         } catch (error) {
                           console.error(error);
-                          alert("公開状態の変更に失敗しました");
                         }
                       }}
                     >
@@ -370,11 +461,11 @@ function ReportCard({
                           alert("レポートを削除しました");
                           window.location.reload();
                         } else {
-                          alert("レポートの削除に失敗しました");
+                          const errorData = await response.json();
+                          throw new Error(errorData.detail || "レポートの削除に失敗しました");
                         }
                       } catch (error) {
                         console.error(error);
-                        alert("レポートの削除に失敗しました");
                       }
                     }
                   }}

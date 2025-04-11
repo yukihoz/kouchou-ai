@@ -59,14 +59,30 @@ async def download_comments_csv(slug: str, api_key: str = Depends(verify_admin_a
 async def get_current_step(slug: str):
     status_file = settings.REPORT_DIR / slug / "hierarchical_status.json"
     try:
+        # ステータスファイルが存在しない場合は "loading" を返す
+        if not status_file.exists():
+            return {"current_step": "loading"}
+
         with open(status_file) as f:
             status = json.load(f)
+
+        # error キーが存在する場合はエラーとみなす
+        if "error" in status:
+            return {"current_step": "error"}
+
         # 全体のステータスが "completed" なら、current_step も "completed" とする
         if status.get("status") == "completed":
             return {"current_step": "completed"}
-        # current_job キーが存在しない場合も完了とみなす
+
+        # current_job キーが存在しない場合も "loading" とみなす
         if "current_job" not in status:
-            return {"current_step": "completed"}
+            return {"current_step": "loading"}
+
+        # current_job が空文字列の場合も "loading" とする
+        if not status.get("current_job"):
+            return {"current_step": "loading"}
+
+        # 有効な current_job を返す
         return {"current_step": status.get("current_job", "unknown")}
     except Exception:
         return {"current_step": "error"}
