@@ -1,20 +1,13 @@
-api:
-  build:
-    context: ./server
-    dockerfile: Dockerfile
-    args:
-      ENVIRONMENT: ${ENVIRONMENT}
-  ports:
-    - "8000:8000"
-  environment:
-    - LOG_LEVEL=debug
-    - ENVIRONMENT=${ENVIRONMENT}
-  restart: unless-stopped
-  healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:8000"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-    start_period: 10s
-  networks:
-    - app-network
+services:
+  - type: web
+    name: api
+    env: docker
+    plan: free
+    dockerContext: ./server
+    dockerfilePath: Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: LOG_LEVEL
+        value: debug
+      - key: ENVIRONMENT
+        sync: false
