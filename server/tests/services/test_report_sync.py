@@ -173,7 +173,7 @@ class TestReportSyncService:
         mock_storage_service.download_directory.assert_called_once_with(
             str(report_sync_service.REMOTE_REPORT_DIR_PREFIX),
             str(settings.REPORT_DIR),
-            target_suffixes=("json",),
+            target_suffixes=report_sync_service.PRESERVED_REPORT_FILES,
         )
 
     def test_download_all_report_results_from_storage_file_not_found(

@@ -3,19 +3,17 @@ import os
 import traceback
 from datetime import datetime, timedelta
 
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
-
 with open("./specs.json") as f:
     specs = json.load(f)
 
 
 def typed_message(t, m):
     if t == "system":
-        return SystemMessage(content=m)
+        return {"role": "system", "content": m}
     if t == "human":
-        return HumanMessage(content=m)
+        return {"role": "user", "content": m}
     if t == "ai":
-        return AIMessage(content=m)
+        return {"role": "assistant", "content": m}
     raise Exception("Unknown message type in prompt: " + t)
 
 

@@ -15,6 +15,7 @@ class ReportSyncService:
     REMOTE_STATUS_FILE_PREFIX = "status"
     REMOTE_CONFIG_DIR_PREFIX = "configs"
     LOCAL_STATUS_FILE_PATH = settings.DATA_DIR / "report_status.json"
+    PRESERVED_REPORT_FILES = (".json", "final_result_with_comments.csv")
 
     def __init__(self):
         self.storage_service = get_storage_service()
@@ -29,7 +30,7 @@ class ReportSyncService:
         self.storage_service.upload_file(str(self.LOCAL_STATUS_FILE_PATH), remote_status_file_path)
 
     def _cleanup_report_files(self, report_dir: Path) -> bool:
-        """レポートディレクトリからJSONファイル以外を削除する
+        """レポートディレクトリから保持すべきファイル以外を削除する
 
         Args:
             report_dir: 削除対象のレポートディレクトリパス
@@ -40,13 +41,13 @@ class ReportSyncService:
         try:
             for root, _, files in os.walk(report_dir):
                 for file in files:
-                    # JSONファイルはレポートの描画に必要なため残し、それ以外は削除
-                    if not file.endswith(".json"):
+                    # 保持すべきファイルは残し、それ以外は削除
+                    if not file.endswith(self.PRESERVED_REPORT_FILES):
                         file_path = os.path.join(root, file)
                         os.remove(file_path)
                         logger.info(f"ファイルを削除しました: {file_path}")
 
-            logger.info(f"レポートディレクトリからJSONファイル以外を削除しました: {report_dir}")
+            logger.info(f"レポートディレクトリから保持すべきファイル以外を削除しました: {report_dir}")
             return True
         except Exception as e:
             logger.error(f"レポートディレクトリのクリーンアップに失敗しました: {report_dir} エラー: {str(e)}")
@@ -70,7 +71,7 @@ class ReportSyncService:
             return False
 
     def sync_report_files_to_storage(self, slug: str) -> None:
-        """レポートの中間ファイルと結果ファイルをストレージにアップロードし、JSONファイル以外を削除する"""
+        """レポートの中間ファイルと結果ファイルをストレージにアップロードし、保持すべきファイル以外を削除する"""
 
         report_dir = settings.REPORT_DIR / slug
         if not report_dir.exists():
@@ -83,7 +84,7 @@ class ReportSyncService:
         # ファイルをストレージにアップロード
         upload_success = self.storage_service.upload_directory(str(local_dir), remote_dir_prefix)
 
-        # アップロードが成功した場合、JSONファイル以外を削除
+        # アップロードが成功した場合、保持すべきファイル以外を削除
         if upload_success:
             self._cleanup_report_files(local_dir)
 
@@ -150,7 +151,7 @@ class ReportSyncService:
             self.storage_service.download_directory(
                 str(self.REMOTE_REPORT_DIR_PREFIX),
                 str(settings.REPORT_DIR),
-                target_suffixes=("json",),
+                target_suffixes=self.PRESERVED_REPORT_FILES,
             )
             return True
         except FileNotFoundError:

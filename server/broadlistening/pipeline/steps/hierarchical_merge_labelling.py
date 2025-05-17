@@ -5,6 +5,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
+from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from services.llm import request_to_chat_openai
@@ -50,6 +51,7 @@ def hierarchical_merge_labelling(config: dict) -> None:
                 - prompt: LLMへのプロンプト
                 - model: 使用するLLMモデル名
                 - workers: 並列処理のワーカー数
+            - provider: LLMプロバイダー
     """
     dataset = config["output_dir"]
     merge_path = f"outputs/{dataset}/hierarchical_merge_labels.csv"
@@ -201,6 +203,13 @@ def merge_labelling(clusters_df: pd.DataFrame, cluster_id_columns: list[str], co
     return clusters_df
 
 
+class LabellingFromat(BaseModel):
+    """ラベリング結果のフォーマットを定義する"""
+
+    label: str = Field(..., description="クラスタのラベル名")
+    description: str = Field(..., description="クラスタの説明文")
+
+
 def process_merge_labelling(
     target_cluster_id: str,
     result_df: pd.DataFrame,
@@ -264,9 +273,11 @@ def process_merge_labelling(
         response = request_to_chat_openai(
             messages=messages,
             model=config["hierarchical_merge_labelling"]["model"],
-            is_json=True,
+            json_schema=LabellingFromat,
+            provider=config["provider"],
+            local_llm_address=config.get("local_llm_address"),
         )
-        response_json = json.loads(response)
+        response_json = json.loads(response) if isinstance(response, str) else response
         return {
             current_columns.id: target_cluster_id,
             current_columns.label: response_json.get("label", "エラーでラベル名が取得できませんでした"),

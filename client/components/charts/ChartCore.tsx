@@ -3,7 +3,6 @@
 import { LoadingBar } from "@/components/report/LoadingBar";
 import jaLocale from "@/lib/plotly-locale-ja";
 import dynamic from "next/dynamic";
-import React from "react";
 
 export const ChartCore = dynamic(
   async () => {
@@ -12,10 +11,12 @@ export const ChartCore = dynamic(
     const Sunburst = await import("plotly.js/lib/sunburst");
     const Treemap = await import("plotly.js/lib/treemap");
 
-    const createPlotlyComponent = (await import("react-plotly.js/factory"))
-      .default;
+    // ズームとパン機能のために必要なモジュール
+    const ScatterGL = await import("plotly.js/lib/scattergl");
 
-    Plotly.register([Scatter, Sunburst, Treemap]);
+    const createPlotlyComponent = (await import("react-plotly.js/factory")).default;
+
+    Plotly.register([Scatter, Sunburst, Treemap, ScatterGL]);
     Plotly.register(jaLocale);
 
     return createPlotlyComponent(Plotly);

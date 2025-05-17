@@ -20,33 +20,20 @@ type Props = {
 export function Footer({ meta }: Props) {
   return (
     <footer>
-      <Stack
-        direction={{ base: "column", lg: "row" }}
-        justify={"space-between"}
-        maxW={"800px"}
-        mx={"auto"}
-      >
+      <Stack direction={{ base: "column", lg: "row" }} justify={"space-between"} maxW={"800px"} mx={"auto"}>
         <HStack gap={5} justify={"center"} align={"center"}>
           <Text fontWeight={"bold"} fontSize={"lg"}>
             {meta.reporter}
           </Text>
-          {meta.privacyLink && (
-            <Link
-              href={meta.privacyLink}
-              target={"_blank"}
-              rel={"noopener noreferrer"}
-            >
+          {!meta.isDefault && meta.privacyLink && (
+            <Link href={meta.privacyLink} target={"_blank"} rel={"noopener noreferrer"}>
               <Text fontSize={"xs"} className={"textLink"}>
                 プライバシーポリシー
               </Text>
             </Link>
           )}
-          {meta.termsLink && (
-            <Link
-              href={meta.termsLink}
-              target={"_blank"}
-              rel={"noopener noreferrer"}
-            >
+          {!meta.isDefault && meta.termsLink && (
+            <Link href={meta.termsLink} target={"_blank"} rel={"noopener noreferrer"}>
               <Text fontSize={"xs"} className={"textLink"}>
                 利用規約
               </Text>
@@ -63,12 +50,7 @@ export function Footer({ meta }: Props) {
             </DrawerTrigger>
             <DrawerContent roundedTop={"md"} p={5}>
               <DrawerHeader>
-                <DrawerTitle
-                  fontSize={"2xl"}
-                  fontWeight={"bold"}
-                  textAlign={"center"}
-                  className={"gradientColor"}
-                >
+                <DrawerTitle fontSize={"2xl"} fontWeight={"bold"} textAlign={"center"} className={"gradientColor"}>
                   デジタル民主主義2030プロジェクト
                 </DrawerTitle>
               </DrawerHeader>
@@ -81,15 +63,9 @@ export function Footer({ meta }: Props) {
                     2030年には、情報技術により民主主義のあり方はアップデートされており、一人ひとりの声が政治・行政に届き、適切に合意形成・政策反映されていくような社会が当たり前になる──そんな未来を目指して立ち上げられたのがデジタル民主主義2030プロジェクトです。
                     AIやデジタル技術の進化により、これまで不可能だった新しい形の市民参加や政策運営が可能になるはずだという信念に基づいています。
                   </Text>
-                  <Link
-                    href={"https://dd2030.org"}
-                    target={"_blank"}
-                    rel={"noreferrer noopener"}
-                  >
+                  <Link href={"https://dd2030.org"} target={"_blank"} rel={"noreferrer noopener"}>
                     <HStack justify={"center"} mt={2}>
-                      <Text className={"textLink"}>
-                        プロジェクトについての詳細はこちら
-                      </Text>
+                      <Text className={"textLink"}>プロジェクトについての詳細はこちら</Text>
                       <ExternalLinkIcon />
                     </HStack>
                   </Link>
@@ -98,9 +74,7 @@ export function Footer({ meta }: Props) {
                   <Heading size={"lg"} mb={2} textAlign={"center"}>
                     免責
                   </Heading>
-                  <Text mb={2}>
-                    このレポート内容に関する質問や意見はレポート発行責任者へお問い合わせください。
-                  </Text>
+                  <Text mb={2}>このレポート内容に関する質問や意見はレポート発行責任者へお問い合わせください。</Text>
                   <Text>
                     大規模言語モデル（LLM）にはバイアスがあり、信頼性の低い結果を生成することが知られています。私たちはこれらの問題を軽減する方法に積極的に取り組んでいますが、現段階ではいかなる保証も提供することはできません。特に重要な決定を下す際は、本アプリの出力結果のみに依存せず、必ず内容を検証してください。
                   </Text>
@@ -122,9 +96,7 @@ export function Footer({ meta }: Props) {
                     が開発した{" "}
                     <a
                       className={"textLink"}
-                      href={
-                        "https://github.com/AIObjectives/talk-to-the-city-reports"
-                      }
+                      href={"https://github.com/AIObjectives/talk-to-the-city-reports"}
                       target={"_blank"}
                       rel="noreferrer"
                     >

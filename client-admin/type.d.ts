@@ -1,4 +1,5 @@
 export type Meta = {
+  isDefault: boolean; // デフォルトのメタデータかどうか
   reporter: string; // レポート作成者名
   message: string; // レポート作成者からのメッセージ
   webLink?: string; // レポート作成者URL
@@ -7,13 +8,19 @@ export type Meta = {
   brandColor?: string; // ブランドカラー
 };
 
+export enum ReportVisibility {
+  PUBLIC = "public",
+  PRIVATE = "private",
+  UNLISTED = "unlisted",
+}
+
 export type Report = {
   slug: string;
   status: string;
   title: string;
   description: string;
   isPubcom: boolean;
-  isPublic?: boolean;
+  visibility: ReportVisibility;
   createdAt?: string; // 作成日時（ISO形式の文字列）
 };
 

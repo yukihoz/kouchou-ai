@@ -74,6 +74,34 @@ def parse_response(response):
         return items
 
 
+def parse_extraction_response(response: str | dict) -> list[str]:
+    """
+    structured outputで出力したextraction responseをパースする。
+    responseは以下のような形式の文字列。
+    {"arguments": ["arg1", "arg2", "arg3"]}
+    """
+
+    try:
+        if isinstance(response, dict):
+            return response["extractedOpinionList"]
+
+        response_dict = json.loads(response)
+        extracted_opinions = response_dict["extractedOpinionList"]
+        # argumentsがリストでない場合は空のリストを返す
+        if not isinstance(extracted_opinions, list):
+            return []
+        return extracted_opinions
+    except json.JSONDecodeError:
+        print("Failed to parse extraction response, json.JSONDecodeError", response)
+        return []
+    except KeyError:
+        print("Failed to parse extraction response, no 'arguments' key", response)
+        return []
+    except Exception as e:
+        print("Failed to parse extraction response, unknown error", response, e)
+        return []
+
+
 if __name__ == "__main__":
     import doctest
 

@@ -1,4 +1,5 @@
 export type Meta = {
+  isDefault: boolean; // デフォルトのメタデータかどうか
   reporter: string; // レポート作成者名
   message: string; // レポート作成者からのメッセージ
   webLink?: string; // レポート作成者URL
@@ -7,12 +8,19 @@ export type Meta = {
   brandColor?: string; // ブランドカラー
 };
 
+export enum ReportVisibility {
+  PUBLIC = "public",
+  PRIVATE = "private",
+  UNLISTED = "unlisted",
+}
+
 export type Report = {
   slug: string;
   status: string;
   title: string;
   description: string;
-  isPublic?: boolean;
+  isPubcom: boolean;
+  visibility: ReportVisibility;
   createdAt?: string; // 作成日時（ISO形式の文字列）
 };
 
@@ -72,6 +80,7 @@ type Config = {
   intro: string; // イントロダクションの説明文
   output_dir: string; // 結果の出力ディレクトリ名
   previous?: Config; // 過去の設定情報
+  is_embedded_at_local: boolean; // ローカルで埋め込みを生成するかどうか
   extraction: {
     workers: number; // 並列処理数
     limit: number; // データ抽出の上限数

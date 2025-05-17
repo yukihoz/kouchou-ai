@@ -10,11 +10,22 @@ class ReportStatus(Enum):
     DELETED = "deleted"
 
 
+class ReportVisibility(Enum):
+    PUBLIC = "public"
+    UNLISTED = "unlisted"
+    PRIVATE = "private"
+
+
 class Report(SchemaBaseModel):
     slug: str
     title: str
     description: str
     status: ReportStatus
+    visibility: ReportVisibility
     is_pubcom: bool = False
-    is_public: bool = True  # デフォルトは公開状態
     created_at: str | None = None  # 作成日時
+
+    @property
+    def is_publicly_visible(self) -> bool:
+        """レポートが一般ユーザーに公開表示可能かどうかを返す"""
+        return self.visibility == ReportVisibility.PUBLIC

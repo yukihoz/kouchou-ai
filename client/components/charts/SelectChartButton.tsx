@@ -1,13 +1,7 @@
 import { RadioCardItem, RadioCardRoot } from "@/components/ui/radio-card";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Button, HStack, Icon, useBreakpointValue } from "@chakra-ui/react";
-import {
-  ChartScatterIcon,
-  CogIcon,
-  FullscreenIcon,
-  MessageCircleWarningIcon,
-  SquareSquareIcon,
-} from "lucide-react";
+import { ChartScatterIcon, CogIcon, FullscreenIcon, MessageCircleWarningIcon, SquareSquareIcon } from "lucide-react";
 import type React from "react";
 
 type Props = {
@@ -15,6 +9,7 @@ type Props = {
   onChange: (value: string) => void;
   onClickDensitySetting: () => void;
   onClickFullscreen: () => void;
+  isDenseGroupEnabled: boolean;
 };
 
 export function SelectChartButton({
@@ -22,16 +17,10 @@ export function SelectChartButton({
   onChange,
   onClickDensitySetting,
   onClickFullscreen,
+  isDenseGroupEnabled,
 }: Props) {
   return (
-    <HStack
-      w={"100%"}
-      maxW={"1200px"}
-      mx={"auto"}
-      justify={"space-between"}
-      align={"center"}
-      mb={2}
-    >
+    <HStack w={"100%"} maxW={"1200px"} mx={"auto"} justify={"space-between"} align={"center"} mb={2}>
       <RadioCardRoot
         orientation="horizontal"
         align="center"
@@ -41,9 +30,7 @@ export function SelectChartButton({
         size={"sm"}
         display={"block"}
         value={selected}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          onChange(e.target.value)
-        }
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
         colorPalette={"cyan"}
       >
         <HStack align={"stretch"}>
@@ -68,6 +55,8 @@ export function SelectChartButton({
               </Icon>
             }
             cursor={"pointer"}
+            disabled={!isDenseGroupEnabled}
+            disabledReason={"この設定条件では抽出できませんでした"}
           />
           <RadioCardItem
             value={"treemap"}
@@ -83,12 +72,8 @@ export function SelectChartButton({
         </HStack>
       </RadioCardRoot>
       <HStack>
-        <Tooltip content={"濃い意見グループ設定"} openDelay={0} closeDelay={0}>
-          <Button
-            onClick={onClickDensitySetting}
-            variant={"outline"}
-            h={"50px"}
-          >
+        <Tooltip content={"表示設定"} openDelay={0} closeDelay={0}>
+          <Button onClick={onClickDensitySetting} variant={"outline"} h={"50px"}>
             <Icon>
               <CogIcon />
             </Icon>

@@ -31,20 +31,12 @@ footer {
 
 .gradientBg {
   color: #ffffff;
-  background: linear-gradient(
-    90deg,
-    rgb(37, 160, 57) 0%,
-    rgb(37, 119, 177) 100%
-  );
+  background: linear-gradient(90deg, rgb(37, 160, 57) 0%, rgb(37, 119, 177) 100%);
 }
 
 .gradientColor {
   color: transparent;
-  background: linear-gradient(
-    90deg,
-    rgb(37, 160, 57) 0%,
-    rgb(37, 119, 177) 100%
-  );
+  background: linear-gradient(90deg, rgb(37, 160, 57) 0%, rgb(37, 119, 177) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

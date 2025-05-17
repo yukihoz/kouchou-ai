@@ -1,0 +1,21 @@
+// 型定義
+export interface SpreadsheetComment {
+  id?: string;
+  comment: string;
+  source?: string | null;
+  url?: string | null;
+}
+
+export interface ClusterSettings {
+  lv1: number;
+  lv2: number;
+}
+
+export interface PromptSettings {
+  extraction: string;
+  initialLabelling: string;
+  mergeLabelling: string;
+  overview: string;
+}
+
+export type InputType = "file" | "spreadsheet";

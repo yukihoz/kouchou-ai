@@ -13,14 +13,27 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const metaResponse = await fetch(`${getApiBaseUrl()}/meta/metadata.json`);
     const meta: Meta = await metaResponse.json();
-    return {
+
+    const { getBasePath, getRelativeUrl } = await import("@/app/utils/image-src");
+
+    const metadata: Metadata = {
       title: `${meta.reporter} - 広聴AI(デジタル民主主義2030ブロードリスニング)`,
-      description: `${meta.message}`,
+      description: meta.message || "",
       openGraph: {
-        images: [`${process.env.NEXT_PUBLIC_API_BASEPATH}/meta/ogp.png`],
+        images: [getRelativeUrl("/meta/ogp.png")],
       },
     };
+
+    // 静的エクスポート時はmetadataBaseを設定しない（相対パスを使用するため）
+    if (process.env.NEXT_PUBLIC_OUTPUT_MODE !== "export") {
+      // 開発環境やSSR時のみmetadataBaseを設定
+      const defaultHost = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      metadata.metadataBase = new URL(defaultHost + getBasePath());
+    }
+
+    return metadata;
   } catch (_e) {
+    console.error("Failed to fetch metadata for generateMetadata:", _e);
     return {
       title: "広聴AI(デジタル民主主義2030ブロードリスニング)",
     };
@@ -41,10 +54,10 @@ export default async function Page() {
     return (
       <>
         <div className={"container"}>
-          <Header meta={meta} />
+          {meta && <Header meta={meta} />}
           <Box mx={"auto"} maxW={"900px"} mb={10}>
-            <Heading textAlign={"center"} fontSize={"xl"} mb={5}>
-              Reports
+            <Heading textAlign={"left"} fontSize={"xl"} mb={8}>
+              レポート一覧
             </Heading>
             {!reports && (
               <VStack my={10}>
@@ -73,16 +86,10 @@ export default async function Page() {
                           </Card.Title>
                           {report.createdAt && (
                             <Text fontSize={"xs"} color={"gray.500"} mb={1}>
-                              作成日時:{" "}
-                              {new Date(report.createdAt).toLocaleString(
-                                "ja-JP",
-                                { timeZone: "Asia/Tokyo" },
-                              )}
+                              作成日時: {new Date(report.createdAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}
                             </Text>
                           )}
-                          <Card.Description>
-                            {report.description || ""}
-                          </Card.Description>
+                          <Card.Description>{report.description || ""}</Card.Description>
                         </Box>
                       </HStack>
                     </Card.Body>
@@ -90,9 +97,9 @@ export default async function Page() {
                 </Link>
               ))}
           </Box>
-          <About meta={meta} />
+          {meta && <About meta={meta} />}
         </div>
-        <Footer meta={meta} />
+        {meta && <Footer meta={meta} />}
       </>
     );
   } catch (_e) {

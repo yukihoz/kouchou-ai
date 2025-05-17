@@ -7,12 +7,9 @@ import dynamic from "next/dynamic";
 // 将来的に解消される可能性があるため、以下のディスカッションを参照してください
 // https://github.com/chakra-ui/chakra-ui/discussions/9051
 
-const Provider = dynamic(
-  () => import("@/components/ui/provider").then((mod) => mod.Provider),
-  {
-    ssr: false,
-  },
-);
+const Provider = dynamic(() => import("@/components/ui/provider").then((mod) => mod.Provider), {
+  ssr: false,
+});
 
 export default function ClientProvider({
   children,

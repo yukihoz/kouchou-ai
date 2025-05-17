@@ -4,7 +4,6 @@ import { Header } from "@/components/Header";
 import { Analysis } from "@/components/report/Analysis";
 import { BackButton } from "@/components/report/BackButton";
 import { ClientContainer } from "@/components/report/ClientContainer";
-import { ClusterOverview } from "@/components/report/ClusterOverview";
 import { Overview } from "@/components/report/Overview";
 import type { Meta, Report, Result } from "@/type";
 import { Separator } from "@chakra-ui/react";
@@ -40,9 +39,7 @@ export async function generateStaticParams() {
   }
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   try {
     const slug = (await params).slug;
     const metaResponse = await fetch(`${getApiBaseUrl()}/meta/metadata.json`);
@@ -55,15 +52,22 @@ export async function generateMetadata({
     if (!metaResponse.ok || !resultResponse.ok) {
       return {};
     }
+
+    const { getBasePath } = await import("@/app/utils/image-src");
+
     const meta: Meta = await metaResponse.json();
     const result: Result = await resultResponse.json();
     const metaData: Metadata = {
       title: `${result.config.question} - ${meta.reporter}`,
       description: `${result.overview}`,
-      metadataBase: new URL(
-        process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-      ),
     };
+
+    // 静的エクスポート時はmetadataBaseを設定しない（相対パスを使用するため）
+    if (process.env.NEXT_PUBLIC_OUTPUT_MODE !== "export") {
+      // 開発環境やSSR時のみmetadataBaseを設定
+      const defaultHost = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      metaData.metadataBase = new URL(defaultHost + getBasePath());
+    }
 
     if (process.env.NEXT_PUBLIC_OUTPUT_MODE === "export") {
       metaData.openGraph = {
@@ -100,11 +104,6 @@ export default async function Page({ params }: PageProps) {
         <Header meta={meta} />
         <Overview result={result} />
         <ClientContainer result={result} />
-        {result.clusters
-          .filter((c) => c.level === 1)
-          .map((c) => (
-            <ClusterOverview key={c.id} cluster={c} />
-          ))}
         <Analysis result={result} />
         <BackButton />
         <Separator my={12} maxW={"750px"} mx={"auto"} />

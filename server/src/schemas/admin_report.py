@@ -1,6 +1,7 @@
 from typing import Literal
 
 from src.schemas.base import SchemaBaseModel
+from src.schemas.report import ReportVisibility
 
 
 class Comment(SchemaBaseModel):
@@ -31,3 +32,19 @@ class ReportInput(SchemaBaseModel):
     comments: list[Comment]  # コメントのリスト
     is_pubcom: bool = False  # CSV出力モード出力フラグ
     inputType: Literal["file", "spreadsheet"] = "file"  # 入力タイプ
+    is_embedded_at_local: bool = False  # エンベデッド処理をローカルで行うかどうか
+    provider: str = "openai"  # LLMプロバイダー（openai, azure, openrouter, local）
+    local_llm_address: str | None = None  # LocalLLM用アドレス（例: "127.0.0.1:1234"）
+
+
+class ReportMetadataUpdate(SchemaBaseModel):
+    """レポートのメタデータ更新用スキーマ"""
+
+    title: str | None = None  # レポートのタイトル
+    description: str | None = None  # レポートの調査概要
+
+
+class ReportVisibilityUpdate(SchemaBaseModel):
+    """レポートの可視性更新用スキーマ"""
+
+    visibility: ReportVisibility  # レポートの可視性

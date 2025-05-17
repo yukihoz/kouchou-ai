@@ -4,12 +4,7 @@ import { Box, Text } from "@chakra-ui/react";
 
 type Props = {
   selectedClusters: Cluster[];
-  onChangeFilter: (
-    level1: string,
-    level2: string,
-    level3: string,
-    level4: string,
-  ) => void;
+  onChangeFilter: (level1: string, level2: string, level3: string, level4: string) => void;
 };
 
 export function ClusterBreadcrumb({ selectedClusters, onChangeFilter }: Props) {
@@ -23,20 +18,10 @@ export function ClusterBreadcrumb({ selectedClusters, onChangeFilter }: Props) {
         onChangeFilter(selectedClusters[0].id, "0", "0", "0");
         break;
       case 2:
-        onChangeFilter(
-          selectedClusters[0].id,
-          selectedClusters[1].id,
-          "0",
-          "0",
-        );
+        onChangeFilter(selectedClusters[0].id, selectedClusters[1].id, "0", "0");
         break;
       case 3:
-        onChangeFilter(
-          selectedClusters[0].id,
-          selectedClusters[1].id,
-          selectedClusters[2].id,
-          "0",
-        );
+        onChangeFilter(selectedClusters[0].id, selectedClusters[1].id, selectedClusters[2].id, "0");
         break;
       case 4:
         // do nothing.
@@ -46,12 +31,7 @@ export function ClusterBreadcrumb({ selectedClusters, onChangeFilter }: Props) {
 
   if (!selectedClusters.length) return <></>;
   return (
-    <Box
-      mx={"auto"}
-      maxW={"870px"}
-      mb={6}
-      display={{ base: "none", md: "block" }}
-    >
+    <Box mx={"auto"} maxW={"870px"} mb={6} display={{ base: "none", md: "block" }}>
       <Text fontSize={"sm"} fontWeight={"bold"}>
         表示中の意見グループ
       </Text>

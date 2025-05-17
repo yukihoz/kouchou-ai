@@ -16,10 +16,7 @@ export async function GET(request: Request) {
     headers: {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
-      "Content-Length": Buffer.byteLength(
-        JSON.stringify(data),
-        "utf8",
-      ).toString(),
+      "Content-Length": Buffer.byteLength(JSON.stringify(data), "utf8").toString(),
     },
   });
 }

@@ -246,6 +246,9 @@ make azure-logs-api
 
 # 管理画面ログ
 make azure-logs-admin
+
+# クライアントビルドログ
+make azure-logs-client-static-build
 ```
 
 ### コスト最適化

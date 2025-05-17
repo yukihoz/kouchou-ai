@@ -1,3 +1,22 @@
+x-client-common: &client-common
+  depends_on:
+    api:
+      condition: service_healthy
+  env_file:
+    - .env
+  restart: unless-stopped
+  networks:
+    - app-network
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+x-client-build-args: &client-build-args
+  args:
+    - NEXT_PUBLIC_API_BASEPATH=${NEXT_PUBLIC_API_BASEPATH}
+    - API_BASEPATH=${API_BASEPATH}
+    - NEXT_PUBLIC_PUBLIC_API_KEY=${NEXT_PUBLIC_PUBLIC_API_KEY}
+    - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+
 services:
   api:
     build:
@@ -5,6 +24,7 @@ services:
       dockerfile: Dockerfile
       args:
         - ENVIRONMENT=${ENVIRONMENT}
+        - WITH_GPU=${WITH_GPU:-false}
     ports:
       - "8000:8000"
     volumes:
@@ -24,26 +44,20 @@ services:
       - app-network
   
   client:
+    <<: *client-common
     build:
       context: ./client
       dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_API_BASEPATH=${NEXT_PUBLIC_API_BASEPATH}
-        - API_BASEPATH=${API_BASEPATH}
-        - NEXT_PUBLIC_PUBLIC_API_KEY=${NEXT_PUBLIC_PUBLIC_API_KEY}
-        - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
-    depends_on:
-      api:
-        condition: service_healthy
+      <<: *client-build-args
     ports:
       - "3000:3000"
-    env_file:
-      - .env
-    restart: unless-stopped
-    networks:
-      - app-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+
+  client-static-build:
+    <<: *client-common
+    build:
+      context: .
+      dockerfile: ./client-static-build/Dockerfile
+      <<: *client-build-args
   
   client-admin:
     build:
@@ -53,6 +67,7 @@ services:
         - NEXT_PUBLIC_CLIENT_BASEPATH=${NEXT_PUBLIC_CLIENT_BASEPATH}
         - NEXT_PUBLIC_API_BASEPATH=${NEXT_PUBLIC_API_BASEPATH}
         - NEXT_PUBLIC_ADMIN_API_KEY=${NEXT_PUBLIC_ADMIN_API_KEY}
+        - CLIENT_STATIC_BUILD_BASEPATH=${CLIENT_STATIC_BUILD_BASEPATH}
     ports:
       - "4000:4000"
     env_file:
@@ -61,6 +76,37 @@ services:
     networks:
       - app-network
       
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - app-network
+    profiles:
+      - ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # ollama イメージのデフォルトエントリーポイントを上書きして、モデルを自動ダウンロード
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ollama serve &
+        sleep 10
+        ollama pull hf.co/elyza/Llama-3-ELYZA-JP-8B-GGUF
+        tail -f /dev/null
+
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  ollama-data:
+    driver: local

@@ -8,9 +8,9 @@ type Props = {
 
 export function Overview({ result }: Props) {
   return (
-    <Box mx={"auto"} maxW={"750px"} mb={10}>
-      <Heading textAlign={"center"} fontSize={"xl"} mb={5}>
-        Report
+    <Box mx={"auto"} maxW={"750px"} mb={32}>
+      <Heading textAlign={"left"} fontSize={"xl"} mb={5}>
+        レポート
       </Heading>
       <Heading as={"h2"} size={"4xl"} mb={2} className={"headingColor"}>
         {result.config.question}

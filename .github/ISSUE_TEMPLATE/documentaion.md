@@ -2,7 +2,7 @@
 name: "ドキュメント"
 about: "解説ドキュメントの追加や改善を行います"
 title: "[DOCUMENT]"
-labels: "docment"
+labels: "documentation"
 assignees: ""
 ---
 

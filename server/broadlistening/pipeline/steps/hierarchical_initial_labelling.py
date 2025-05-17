@@ -4,6 +4,7 @@ from functools import partial
 from typing import TypedDict
 
 import pandas as pd
+from pydantic import BaseModel, Field
 
 from services.llm import request_to_chat_openai
 
@@ -27,6 +28,7 @@ def hierarchical_initial_labelling(config: dict) -> None:
                 - prompt: LLMへのプロンプト
                 - model: 使用するLLMモデル名
                 - workers: 並列処理のワーカー数
+            - provider: LLMプロバイダー
     """
     dataset = config["output_dir"]
     path = f"outputs/{dataset}/hierarchical_initial_labels.csv"
@@ -45,6 +47,8 @@ def hierarchical_initial_labelling(config: dict) -> None:
         sampling_num,
         model,
         workers,
+        config["provider"],
+        config.get("local_llm_address"),
     )
     print("start initial labelling")
     initial_clusters_argument_df = clusters_argument_df.merge(
@@ -68,6 +72,8 @@ def initial_labelling(
     sampling_num: int,
     model: str,
     workers: int,
+    provider: str = "openai",
+    local_llm_address: str = None,
 ) -> pd.DataFrame:
     """各クラスタに対して初期ラベリングを実行する
 
@@ -91,10 +97,19 @@ def initial_labelling(
         sampling_num=sampling_num,
         target_column=initial_cluster_column,
         model=model,
+        provider=provider,
+        local_llm_address=local_llm_address,
     )
     with ThreadPoolExecutor(max_workers=workers) as executor:
         results = list(executor.map(process_func, cluster_ids))
     return pd.DataFrame(results)
+
+
+class LabellingFromat(BaseModel):
+    """ラベリング結果のフォーマットを定義する"""
+
+    label: str = Field(..., description="クラスタのラベル名")
+    description: str = Field(..., description="クラスタの説明文")
 
 
 def process_initial_labelling(
@@ -104,6 +119,8 @@ def process_initial_labelling(
     sampling_num: int,
     target_column: str,
     model: str,
+    provider: str = "openai",
+    local_llm_address: str = None,
 ) -> LabellingResult:
     """個別のクラスタに対してラベリングを実行する
 
@@ -127,8 +144,14 @@ def process_initial_labelling(
         {"role": "user", "content": input},
     ]
     try:
-        response = request_to_chat_openai(messages=messages, model=model, is_json=True)
-        response_json = json.loads(response)
+        response = request_to_chat_openai(
+            messages=messages,
+            model=model,
+            provider=provider,
+            json_schema=LabellingFromat,
+            local_llm_address=local_llm_address,
+        )
+        response_json = json.loads(response) if isinstance(response, str) else response
         return LabellingResult(
             cluster_id=cluster_id,
             label=response_json.get("label", "エラーでラベル名が取得できませんでした"),

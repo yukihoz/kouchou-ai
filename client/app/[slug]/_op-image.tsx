@@ -9,26 +9,79 @@ export const size = {
 };
 export const contentType = "image/png";
 
+// フォントキャッシュ
+const fontCache: Record<number, Promise<ArrayBuffer> | null> = {};
+
 async function fetchFont(weight: number) {
-  const fontData = await fetch(
-    `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@${weight}`,
-  ).then((res) => res.text());
-  const fontUrl = fontData.match(/url\((.*?)\)/)?.[1];
-  if (!fontUrl) throw new Error("Failed to load font");
-  return fetch(fontUrl).then((res) => res.arrayBuffer());
+  // キャッシュにフォントがあれば再利用
+  if (fontCache[weight]) {
+    return fontCache[weight];
+  }
+
+  // キャッシュにない場合は取得してキャッシュに保存
+  const fontPromise = (async () => {
+    const fontData = await fetch(`https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@${weight}`).then((res) =>
+      res.text(),
+    );
+    const fontUrl = fontData.match(/url\((.*?)\)/)?.[1];
+    if (!fontUrl) throw new Error("Failed to load font");
+    return fetch(fontUrl).then((res) => res.arrayBuffer());
+  })();
+
+  // キャッシュに保存
+  fontCache[weight] = fontPromise;
+
+  return fontPromise;
+}
+
+// 多数のAPIリクエストをリトライする関数
+async function fetchApiWithRetry(url: string, options: RequestInit, retries = 5, delay = 1000): Promise<Response> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) {
+        return response;
+      }
+      console.warn(`API fetch failed with status ${response.status} for ${url}. Attempt ${i + 1}/${retries + 1}.`);
+      if (i < retries && (response.status >= 500 || response.status === 408)) {
+        // Retry on 5xx or Request Timeout 408
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue; // Retry
+      }
+      // 回復可能な状態でも最後の試行でもない場合は、エラーを投げる。
+      throw new Error(`API fetch failed with status ${response.status}`);
+    } catch (error: unknown) {
+      console.warn(
+        `API fetch error for ${url}: ${error instanceof Error ? error.message : String(error)}. Attempt ${i + 1}/${retries + 1}.`,
+      );
+      // ネットワークエラー時のリトライ (TypeError from fetch)
+      if (i < retries) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue; // Retry
+      }
+      // If last attempt, re-throw the error
+      throw error;
+    }
+  }
+  // Should not reach here if loop conditions are correct, but good practice
+  throw new Error(`API fetch failed after ${retries + 1} attempts for ${url}`);
 }
 
 export const OpImage = async (slug: string) => {
-  const [font400, font700, result] = await Promise.all([
+  // Use the retry function for the API fetch
+  const [font400, font700, apiResponse] = await Promise.all([
     fetchFont(400),
     fetchFont(700),
-    fetch(`${getApiBaseUrl()}/reports/${slug}`, {
+    fetchApiWithRetry(`${getApiBaseUrl()}/reports/${slug}`, {
       headers: {
         "x-api-key": process.env.NEXT_PUBLIC_PUBLIC_API_KEY || "",
         "Content-Type": "application/json",
       },
-    }).then((res) => res.json()),
+    }),
   ]);
+
+  // 成功したレスポンスからJSONを解析する。
+  const result: Result = await apiResponse.json();
 
   const clusterNum = getClusterNum(result);
   const pageTitle = result.config.question;
@@ -111,17 +164,9 @@ function Footer() {
         lineHeight: "1.2",
       }}
     >
-      <div
-        style={{ fontSize: 50, alignSelf: "flex-end", marginBottom: "0.3rem" }}
-      >
-        広聴AI
-      </div>
-      <div style={{ fontSize: 30, alignSelf: "flex-end" }}>
-        デジタル民主主義2030
-      </div>
-      <div style={{ fontSize: 30, alignSelf: "flex-end" }}>
-        ブロードリスニング
-      </div>
+      <div style={{ fontSize: 50, alignSelf: "flex-end", marginBottom: "0.3rem" }}>広聴AI</div>
+      <div style={{ fontSize: 30, alignSelf: "flex-end" }}>デジタル民主主義2030</div>
+      <div style={{ fontSize: 30, alignSelf: "flex-end" }}>ブロードリスニング</div>
     </div>
   );
 }
@@ -164,9 +209,7 @@ function Stats({
             <path d="M12 8v4" />
             <path d="M12 16h.01" />
           </svg>
-          <div style={{ fontWeight: "400" }}>
-            {result.comment_num.toLocaleString()}
-          </div>
+          <div style={{ fontWeight: "400" }}>{result.comment_num.toLocaleString()}</div>
         </div>
         <div style={{ fontSize: 18, marginLeft: "36px" }}>コメント数</div>
       </div>
@@ -219,9 +262,7 @@ function Stats({
             {clusterNum[1].toLocaleString()}→{clusterNum[2].toLocaleString()}
           </div>
         </div>
-        <div style={{ fontSize: 18, marginLeft: "40px" }}>
-          集約した意見グループ数
-        </div>
+        <div style={{ fontSize: 18, marginLeft: "40px" }}>集約した意見グループ数</div>
       </div>
     </div>
   );
