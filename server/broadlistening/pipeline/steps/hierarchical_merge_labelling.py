@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 from tqdm import tqdm
 
-from services.llm import request_to_chat_openai
+from services.llm import request_to_chat_ai
 
 
 @dataclass
@@ -270,14 +270,20 @@ def process_merge_labelling(
         },
     ]
     try:
-        response = request_to_chat_openai(
+        response_text, token_input, token_output, token_total = request_to_chat_ai(
             messages=messages,
             model=config["hierarchical_merge_labelling"]["model"],
             json_schema=LabellingFromat,
             provider=config["provider"],
             local_llm_address=config.get("local_llm_address"),
         )
-        response_json = json.loads(response) if isinstance(response, str) else response
+
+        config["total_token_usage"] = config.get("total_token_usage", 0) + token_total
+        config["token_usage_input"] = config.get("token_usage_input", 0) + token_input
+        config["token_usage_output"] = config.get("token_usage_output", 0) + token_output
+        print(f"Merge labelling: input={token_input}, output={token_output}, total={token_total} tokens")
+
+        response_json = json.loads(response_text) if isinstance(response_text, str) else response_text
         return {
             current_columns.id: target_cluster_id,
             current_columns.label: response_json.get("label", "エラーでラベル名が取得できませんでした"),

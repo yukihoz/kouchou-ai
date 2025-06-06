@@ -37,8 +37,12 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
+        extra = "ignore"
 
 
-settings = Settings()
+env_file = os.environ.get("ENV_FILE", ".env")
+settings = Settings(_env_file=env_file)
+
 # レポート出力ツール側でOpenAI APIを利用できるように、環境変数にセットする
 os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY

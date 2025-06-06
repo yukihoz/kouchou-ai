@@ -7,14 +7,21 @@ from fastapi.responses import FileResponse, ORJSONResponse
 from fastapi.security.api_key import APIKeyHeader
 
 from src.config import settings
-from src.schemas.admin_report import ReportInput, ReportMetadataUpdate, ReportVisibilityUpdate
+from src.core.exceptions import ClusterCSVParseError, ClusterFileNotFound
+from src.repositories.cluster_repository import ClusterRepository
+from src.repositories.config_repository import ConfigRepository
+from src.schemas.admin_report import ReportInput, ReportVisibilityUpdate
+from src.schemas.cluster import ClusterResponse, ClusterUpdate
 from src.schemas.report import Report, ReportStatus
+from src.schemas.report_config import ReportConfigUpdate
 from src.services.llm_models import get_models_by_provider
-from src.services.report_launcher import launch_report_generation
+from src.services.llm_pricing import LLMPricing
+from src.services.report_launcher import execute_aggregation, launch_report_generation
 from src.services.report_status import (
+    invalidate_report_cache,
     load_status_as_reports,
     set_status,
-    update_report_metadata,
+    update_report_config,
     update_report_visibility_state,
 )
 from src.utils.logger import setup_logger
@@ -74,26 +81,48 @@ async def get_current_step(slug: str) -> dict:
         with open(status_file) as f:
             status = json.load(f)
 
+        response = {
+            "current_step": "loading",
+            "token_usage": status.get("total_token_usage", 0),
+            "token_usage_input": status.get("token_usage_input", 0),
+            "token_usage_output": status.get("token_usage_output", 0),
+            "estimated_cost": status.get("estimated_cost", 0.0),
+            "provider": status.get("provider"),
+            "model": status.get("model"),
+        }
+
         # error キーが存在する場合はエラーとみなす
         if "error" in status:
-            return {"current_step": "error"}
+            response["current_step"] = "error"
+            return response
 
         # 全体のステータスが "completed" なら、current_step も "completed" とする
         if status.get("status") == "completed":
-            return {"current_step": "completed"}
+            response["current_step"] = "completed"
+            return response
 
         # current_job キーが存在しない場合も "loading" とみなす
         if "current_job" not in status:
-            return {"current_step": "loading"}
+            return response
 
         # current_job が空文字列の場合も "loading" とする
         if not status.get("current_job"):
-            return {"current_step": "loading"}
+            return response
 
         # 有効な current_job を返す
-        return {"current_step": status.get("current_job", "unknown")}
-    except Exception:
-        return {"current_step": "error"}
+        response["current_step"] = status.get("current_job", "unknown")
+        return response
+    except Exception as e:
+        slogger.error(f"Error in get_current_step: {e}")
+        return {
+            "current_step": "error",
+            "token_usage": 0,
+            "token_usage_input": 0,
+            "token_usage_output": 0,
+            "estimated_cost": 0.0,
+            "provider": None,
+            "model": None,
+        }
 
 
 @router.delete("/admin/reports/{slug}")
@@ -131,25 +160,35 @@ async def update_report_visibility(
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-@router.patch("/admin/reports/{slug}/metadata")
-async def update_report_metadata_endpoint(
-    slug: str, metadata: ReportMetadataUpdate, api_key: str = Depends(verify_admin_api_key)
+@router.patch("/admin/reports/{slug}/config")
+async def update_report_config_endpoint(
+    slug: str, config: ReportConfigUpdate, api_key: str = Depends(verify_admin_api_key)
 ) -> dict:
     """レポートのメタデータ（タイトル、説明）を更新するエンドポイント
 
     Args:
         slug: レポートのスラッグ
-        metadata: 更新するメタデータ
+        config: 更新するレポートの設定
         api_key: 管理者APIキー
 
     Returns:
         更新後のレポート情報
     """
     try:
-        updated_report = update_report_metadata(
+        # 中間ファイル（config.json）を更新
+        config_repo = ConfigRepository(slug)
+        is_updated = config_repo.update_json(config)
+        if not is_updated:
+            raise Exception(f"Failed to update config json for {slug}")
+
+        is_aggregation_executed = execute_aggregation(slug)
+        if not is_aggregation_executed:
+            raise Exception(f"Failed to execute aggregation for {slug}")
+
+        # report_status.json を更新
+        updated_report = update_report_config(
             slug=slug,
-            title=metadata.title or "",
-            description=metadata.description or "",
+            updated_config=config,
         )
         return {
             "success": True,
@@ -161,6 +200,43 @@ async def update_report_metadata_endpoint(
     except Exception as e:
         slogger.error(f"Exception: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.get("/admin/reports/{slug}/cluster-labels")
+async def get_clusters(slug: str, api_key: str = Depends(verify_admin_api_key)) -> dict[str, list[ClusterResponse]]:
+    try:
+        repo = ClusterRepository(slug)
+        return {
+            "clusters": repo.read_from_csv(),
+        }
+    # FIXME: エラーハンドリングが肥大化してきた段階で、ハンドリング処理をhandler/middlewareに切り出す
+    except ClusterFileNotFound as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ClusterCSVParseError as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.patch("/admin/reports/{slug}/cluster-label")
+async def update_cluster_label(
+    slug: str, updated_cluster: ClusterUpdate, api_key: str = Depends(verify_admin_api_key)
+) -> dict[str, bool]:
+    # FIXME: error handlingを共通化するタイミングで、error handlingを切り出す
+    # issue: https://github.com/digitaldemocracy2030/kouchou-ai/issues/546
+    repo = ClusterRepository(slug)
+    is_csv_updated = repo.update_csv(updated_cluster)
+    if not is_csv_updated:
+        raise HTTPException(status_code=500, detail="意見グループの更新に失敗しました")
+
+    # aggregation を実行
+    is_aggregation_executed = execute_aggregation(slug)
+    if not is_aggregation_executed:
+        raise HTTPException(status_code=500, detail="意見グループ更新の集計に失敗しました")
+
+    invalidate_report_cache(slug)
+
+    return {"success": True}
 
 
 @router.get("/admin/models")
@@ -200,7 +276,7 @@ async def verify_chatgpt_api_key(api_key: str = Depends(verify_admin_api_key)) -
     Returns:
         dict: Status of the verification and any error messages in Japanese
     """
-    from broadlistening.pipeline.services.llm import request_to_chat_openai
+    from broadlistening.pipeline.services.llm import request_to_chat_ai
 
     try:
         use_azure = os.getenv("USE_AZURE", "false").lower() == "true"
@@ -210,7 +286,7 @@ async def verify_chatgpt_api_key(api_key: str = Depends(verify_admin_api_key)) -
             {"role": "user", "content": "Hello"},
         ]
 
-        _ = request_to_chat_openai(
+        _ = request_to_chat_ai(
             messages=test_messages,
             model="gpt-4o-mini",
         )
@@ -256,3 +332,17 @@ async def verify_chatgpt_api_key(api_key: str = Depends(verify_admin_api_key)) -
             "error_type": "unknown_error",
             "use_azure": use_azure,
         }
+
+
+@router.get("/admin/llm-pricing")
+async def get_llm_pricing(api_key: str = Depends(verify_admin_api_key)) -> dict:
+    """LLMの価格情報を取得するエンドポイント
+
+    Returns:
+        dict: プロバイダーとモデルごとの価格情報
+    """
+    try:
+        return LLMPricing.PRICING
+    except Exception as e:
+        slogger.error(f"Exception in get_llm_pricing: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error") from e

@@ -1,13 +1,14 @@
 import * as chardet from "chardet";
 import * as iconv from "iconv-lite";
 import Papa from "papaparse";
-import { v4 } from "uuid";
 
 export interface CsvData {
   id: string;
   comment: string;
   source?: string | null;
   url?: string | null;
+  // Allow for dynamic attribute fields
+  [key: string]: string | null | undefined;
 }
 
 export async function parseCsv(csvFile: File): Promise<CsvData[]> {
@@ -29,10 +30,21 @@ export async function parseCsv(csvFile: File): Promise<CsvData[]> {
         skipEmptyLines: true,
         complete: (results) => {
           const data = results.data as CsvData[];
-          const converted = data.map((row) => ({
-            ...row,
-            id: v4(),
-          }));
+          const converted = data.map((row, index) => {
+            // id または comment-id が存在する場合はその値を使用、存在しない場合は csv-${index + 1} を使用
+            let finalId = `csv-${index + 1}`;
+            
+            if (row.id !== undefined && row.id !== null && row.id !== '') {
+              finalId = String(row.id);
+            } else if (row['comment-id'] !== undefined && row['comment-id'] !== null && row['comment-id'] !== '') {
+              finalId = String(row['comment-id']);
+            }
+            
+            return {
+              ...row,
+              id: finalId,
+            };
+          });
           resolve(converted);
         },
         error: (error: Error) => {

@@ -22,6 +22,12 @@ export type Report = {
   isPubcom: boolean;
   visibility: ReportVisibility;
   createdAt?: string; // 作成日時（ISO形式の文字列）
+  tokenUsage?: number; // トークン使用量（合計）
+  tokenUsageInput?: number; // 入力トークン使用量
+  tokenUsageOutput?: number; // 出力トークン使用量
+  estimatedCost?: number; // 推定コスト（USD）
+  provider?: string; // LLMプロバイダー
+  model?: string; // LLMモデル
 };
 
 export type Result = {
@@ -137,4 +143,24 @@ type Config = {
         current_job: string; // 現在のジョブ名
         current_job_started: string; // 現在のジョブの開始時刻
       };
+};
+
+// APIレスポンス用のクラスタ型
+export type ClusterResponse = {
+  level: number;
+  id: string;
+  label: string;
+  description: string;
+  value: number;
+  parent: string | null;
+  density: number | null;
+  density_rank: number | null;
+  density_rank_percentile: number | null;
+};
+
+// クラスタ更新用の型
+export type ClusterUpdate = {
+  id: string;
+  label: string;
+  description: string;
 };

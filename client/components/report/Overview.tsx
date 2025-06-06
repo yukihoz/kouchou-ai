@@ -8,7 +8,7 @@ type Props = {
 
 export function Overview({ result }: Props) {
   return (
-    <Box mx={"auto"} maxW={"750px"} mb={32}>
+    <Box mx={"auto"} maxW={"750px"} mb={8}>
       <Heading textAlign={"left"} fontSize={"xl"} mb={5}>
         レポート
       </Heading>

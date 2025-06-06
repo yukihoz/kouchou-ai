@@ -8,6 +8,8 @@ import requests
 from src.config import settings
 from src.schemas.admin_report import ReportInput
 from src.schemas.report import Report, ReportStatus, ReportVisibility
+from src.schemas.report_config import ReportConfigUpdate
+from src.services.llm_pricing import LLMPricing
 
 # ロガーの設定
 logger = logging.getLogger("uvicorn")
@@ -82,6 +84,12 @@ def add_new_report_to_status(report_input: ReportInput) -> None:
             "is_pubcom": report_input.is_pubcom,
             "visibility": ReportVisibility.UNLISTED.value,
             "created_at": datetime.now(UTC).isoformat(),  # タイムゾーン付きISO形式で追加
+            "token_usage": 0,  # トークン使用量を初期化
+            "token_usage_input": 0,  # 入力トークン使用量を初期化
+            "token_usage_output": 0,  # 出力トークン使用量を初期化
+            "estimated_cost": 0.0,  # 推定コストを初期化
+            "provider": None,  # LLMプロバイダーを初期化
+            "model": None,  # LLMモデルを初期化
         }
         save_status()
 
@@ -102,7 +110,7 @@ def get_status(slug: str) -> str:
 def invalidate_report_cache(slug: str) -> None:
     # Next.jsのキャッシュを破棄するAPIを呼び出す
     try:
-        logger.info(f"Attempting to revalidate Next.js cache for path: /{slug}")
+        logger.info(f"Attempting to revalidate Next.js cache for report: {slug}")
 
         # 環境変数からrevalidate URLを取得
         revalidate_url = settings.REVALIDATE_URL
@@ -111,13 +119,13 @@ def invalidate_report_cache(slug: str) -> None:
 
         response = requests.post(
             revalidate_url,
-            json={"path": f"/{slug}", "secret": settings.REVALIDATE_SECRET},
+            json={"tag": f"report-{slug}", "secret": settings.REVALIDATE_SECRET},
             timeout=3,  # タイムアウトを短く設定
             headers={"Content-Type": "application/json"},
         )
 
         if response.status_code == 200:
-            logger.info("Successfully revalidated Next.js cache")
+            logger.info(f"Successfully revalidated Next.js cache for tag: report-{slug}")
         else:
             logger.error(f"Failed to revalidate: {response.status_code} {response.text}")
     except Exception as e:
@@ -137,7 +145,65 @@ def update_report_visibility_state(slug: str, new_visibility: ReportVisibility) 
     return _report_status[slug]["visibility"]
 
 
-def update_report_metadata(slug: str, title: str = None, description: str = None) -> dict:
+def update_token_usage(
+    slug: str,
+    token_usage: int,
+    token_usage_input: int | None = None,
+    token_usage_output: int | None = None,
+    provider: str | None = None,
+    model: str | None = None,
+) -> None:
+    """レポートのトークン使用量と推定コストを更新する
+
+    Args:
+        slug: レポートのスラッグ
+        token_usage: トークン使用量（合計）
+        token_usage_input: 入力トークン使用量（オプション）
+        token_usage_output: 出力トークン使用量（オプション）
+        provider: LLMプロバイダー名（オプション）
+        model: モデル名（オプション）
+
+    Raises:
+        ValueError: 指定されたスラッグのレポートが存在しない場合
+    """
+    with _lock:
+        if slug not in _report_status:
+            logger.warning(f"slug {slug} not found in report status when updating token usage")
+            return
+
+        _report_status[slug]["token_usage"] = token_usage
+
+        if token_usage_input is not None:
+            _report_status[slug]["token_usage_input"] = token_usage_input
+
+        if token_usage_output is not None:
+            _report_status[slug]["token_usage_output"] = token_usage_output
+
+        if provider is not None:
+            _report_status[slug]["provider"] = provider
+            logger.info(f"Updated provider for {slug}: {provider}")
+
+        if model is not None:
+            _report_status[slug]["model"] = model
+            logger.info(f"Updated model for {slug}: {model}")
+
+        if (
+            token_usage_input is not None
+            and token_usage_output is not None
+            and provider is not None
+            and model is not None
+        ):
+            estimated_cost = LLMPricing.calculate_cost(provider, model, token_usage_input, token_usage_output)
+            _report_status[slug]["estimated_cost"] = estimated_cost
+            logger.info(f"Updated estimated cost for {slug}: ${estimated_cost:.4f}")
+
+        logger.info(
+            f"Updated token usage for {slug} in report status: total={token_usage}, input={token_usage_input}, output={token_usage_output}"
+        )
+        save_status()
+
+
+def update_report_config(slug: str, updated_config: ReportConfigUpdate) -> dict:
     """レポートのメタデータ（タイトル、説明）を更新する
 
     Args:
@@ -156,37 +222,14 @@ def update_report_metadata(slug: str, title: str = None, description: str = None
             raise ValueError(f"slug {slug} not found in report status")
 
         # タイトルの更新（指定された場合のみ）
-        if title is not None:
-            _report_status[slug]["title"] = title
+        if updated_config.question is not None:
+            _report_status[slug]["title"] = updated_config.question
 
         # 説明の更新（指定された場合のみ）
-        if description is not None:
-            _report_status[slug]["description"] = description
+        if updated_config.intro is not None:
+            _report_status[slug]["description"] = updated_config.intro
 
         save_status()
-
-        # hierarchical_result.json ファイルも更新する
-        report_path = settings.REPORT_DIR / slug / "hierarchical_result.json"
-        if report_path.exists():
-            try:
-                with open(report_path) as f:
-                    report_data = json.load(f)
-
-                # タイトルの更新（指定された場合のみ）
-                if title is not None and "config" in report_data:
-                    report_data["config"]["question"] = title
-
-                # 概要の更新（指定された場合のみ）
-                if description is not None:
-                    report_data["overview"] = description
-
-                # 更新したデータを書き込む
-                with open(report_path, "w") as f:
-                    json.dump(report_data, f, ensure_ascii=False, indent=2)
-            except Exception as e:
-                # ファイルの更新に失敗しても、ステータスの更新は成功しているので例外は投げない
-                # ただしログには残す
-                logger.error(f"Failed to update hierarchical_result.json for {slug}: {e}")
 
     invalidate_report_cache(slug)
     return _report_status[slug]

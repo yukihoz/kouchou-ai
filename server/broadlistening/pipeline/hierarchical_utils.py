@@ -1,9 +1,24 @@
 import json
 import os
+import sys
 import traceback
 from datetime import datetime, timedelta
+from pathlib import Path
 
-with open("./hierarchical_specs.json") as f:
+# serverディレクトリをパスに追加
+current_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+try:
+    from src.services.llm_pricing import LLMPricing
+except ImportError:
+    print("Warning: Could not import LLMPricing")
+    LLMPricing = None
+
+PIPELINE_DIR = Path(__file__).parent
+
+with open(PIPELINE_DIR / "hierarchical_specs.json") as f:
     specs = json.load(f)
 
 
@@ -22,6 +37,7 @@ def validate_config(config):
         "is_embedded_at_local",
         "provider",
         "local_llm_address",
+        "enable_source_link",
     ]
     step_names = [x["step"] for x in specs]
     for key in config:
@@ -80,7 +96,7 @@ def decide_what_to_run(config, previous):
             reason = "forced this step with -o"
         elif not found_prev:
             reason = "not trace of previous run"
-        elif not os.path.exists(f"outputs/{config['output_dir']}/{step['filename']}"):
+        elif not os.path.exists(PIPELINE_DIR / f"outputs/{config['output_dir']}/{step['filename']}"):
             reason = "previous data not found"
         else:
             deps = step["dependencies"]["steps"]
@@ -123,8 +139,8 @@ def initialization(sysargv):
 
     # check if job has run before
     previous = False
-    if os.path.exists(f"outputs/{output_dir}/hierarchical_status.json"):
-        with open(f"outputs/{output_dir}/hierarchical_status.json") as f:
+    if os.path.exists(PIPELINE_DIR / f"outputs/{output_dir}/hierarchical_status.json"):
+        with open(PIPELINE_DIR / f"outputs/{output_dir}/hierarchical_status.json") as f:
             previous = json.load(f)
         config["previous"] = previous
 
@@ -152,7 +168,7 @@ def initialization(sysargv):
                     config[step][key] = value
         # try and include source code
         try:
-            with open(f"steps/{step}.py") as f:
+            with open(PIPELINE_DIR / f"steps/{step}.py") as f:
                 config[step]["source_code"] = f.read()
         except Exception:
             print(f"Warning: could not find source code for step '{step}'")
@@ -161,7 +177,7 @@ def initialization(sysargv):
             # resolve prompt
             if "prompt" not in config.get(step):
                 file = config.get(step).get("prompt_file", "default")
-                with open(f"prompts/{step}/{file}.txt") as f:
+                with open(PIPELINE_DIR / f"prompts/{step}/{file}.txt") as f:
                     config[step]["prompt"] = f.read()
             # resolve model
             if "model" not in config.get(step):
@@ -169,8 +185,8 @@ def initialization(sysargv):
                     config[step]["model"] = config["model"]
 
     # create output directory if needed
-    if not os.path.exists(f"outputs/{output_dir}"):
-        os.makedirs(f"outputs/{output_dir}")
+    if not os.path.exists(PIPELINE_DIR / f"outputs/{output_dir}"):
+        os.makedirs(PIPELINE_DIR / f"outputs/{output_dir}")
 
     # check if user is happy with the plan...
     plan = decide_what_to_run(config, previous)
@@ -189,6 +205,11 @@ def initialization(sysargv):
             "status": "running",
             "start_time": datetime.now().isoformat(),
             "completed_jobs": [],
+            "total_token_usage": 0,  # トークン使用量の累積を初期化
+            "token_usage_input": 0,  # 入力トークン使用量を初期化
+            "token_usage_output": 0,  # 出力トークン使用量を初期化
+            "provider": config.get("provider"),  # プロバイダー情報を追加
+            "model": config.get("model"),  # モデル情報を追加
         },
     )
     return config
@@ -203,7 +224,7 @@ def update_status(config, updates):
         else:
             config[key] = value
     config["lock_until"] = (datetime.now() + timedelta(minutes=5)).isoformat()
-    with open(f"outputs/{output_dir}/hierarchical_status.json", "w") as file:
+    with open(PIPELINE_DIR / f"outputs/{output_dir}/hierarchical_status.json", "w") as file:
         json.dump(config, file, indent=2)
 
 
@@ -230,7 +251,24 @@ def run_step(step, func, config):
     )
     print("Running step:", step)
     # run the step...
+    token_usage_before = config.get("total_token_usage", 0)
     func(config)
+    token_usage_after = config.get("total_token_usage", token_usage_before)
+    token_usage_step = token_usage_after - token_usage_before
+
+    estimated_cost = 0.0
+    provider = config.get("provider")
+    model = config.get("model")
+    token_usage_input = config.get("token_usage_input", 0)
+    token_usage_output = config.get("token_usage_output", 0)
+
+    if provider and model and token_usage_input > 0 and token_usage_output > 0:
+        if LLMPricing:
+            estimated_cost = LLMPricing.calculate_cost(provider, model, token_usage_input, token_usage_output)
+            print(f"Estimated cost: ${estimated_cost:.4f} ({provider} {model})")
+        else:
+            estimated_cost = 0.0
+
     # update status after running...
     update_status(
         config,
@@ -247,8 +285,10 @@ def run_step(step, func, config):
                         - datetime.fromisoformat(config["current_job_started"])
                     ).total_seconds(),
                     "params": config[step],
+                    "token_usage": token_usage_step,  # ステップ毎のトークン使用量を追加
                 }
             ],
+            "estimated_cost": estimated_cost,  # 推定コストを追加
         },
     )
 
@@ -264,6 +304,7 @@ def termination(config, error=None):
         # now we can drop previous key (we don't want to store infinite history)
         del config["previous"]
     if error is None:
+        print(f"Total token usage: {config.get('total_token_usage', 0)}")
         update_status(
             config,
             {

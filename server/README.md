@@ -15,14 +15,17 @@ kouchou-aiのAPIサーバーです。
 ```bash
 cp .env.example .env
 ```
-ユーザーが独自に設定すべき環境変数は現状以下の1つ
+ユーザーが設定できるLLMモデルの環境変数設定は以下の通りです。（最低どっちか片方あれば、動作確認できます）
 * OPENAI_API_KEY
   * OpenAIのAPIキー。レポート作成時に利用。
+* OPENROUTER_API_KEY
+  * OpenRouterのAPIキー。OpenRouter経由でOpenAIやGeminiのモデルを使用する場合に必要。
+  * [OpenRouter](https://openrouter.ai/)でアカウントを作成し、APIキーを取得してください。
 
 ※ APIキーは他人と共有しないでください。GithubやSlackにもアップロードしないよう注意してください。  
 ※ このキーを設定しなくてもサーバーは起動しますが、/admin/reportsなど一部のエンドポイントでエラーになります。  
-※ APIキーを設定してレポート作成などを行うと、OpenAI APIの使用料金が発生します。料金はOpenAIの[公式ドキュメント](https://openai.com/ja-JP/api/pricing/)を参照してください。  
-※ OpenAI APIを使用しない機能は無料で利用できます（通常のインターネット利用の通信料等は除く）。
+※ APIキーを設定してレポート作成などを行うと、OpenAI APIまたはOpenRouter APIの使用料金が発生します。料金は各サービスの公式ドキュメントを参照してください。  
+※ OpenAI APIまたはOpenRouter APIを使用しない機能は無料で利用できます（通常のインターネット利用の通信料等は除く）。
 
 ## 起動
 プロジェクトのルートディレクトリ（kouchou-ai/）で以下のコマンドを実行してください。
@@ -67,3 +70,21 @@ Swagger UI 右上の **Authorize** ボタンをクリックし、`.env` ファ�
 docker compose down
 docker compose up api
 ```
+
+## OpenRouterの使用方法
+
+OpenRouterを使用する場合は、以下の手順で設定を行ってください：
+
+1. [OpenRouter](https://openrouter.ai/)でアカウントを作成
+2. APIキーを取得し、`.env`ファイルの`OPENROUTER_API_KEY`に設定
+3. 使用したいモデルを指定（例：`openai/gpt-4`、`google/gemini-pro`など）
+
+OpenRouterを使用する利点：
+* OpenAIやGoogleのモデルにアクセス可能
+* より柔軟なモデル選択が可能
+* 料金体系が異なる場合がある
+
+注意事項：
+* OpenRouterの料金体系はOpenAIやGoogleとは異なります
+* モデルによって利用可能な機能が異なる場合があります
+* レスポンス時間はOpenAIやGoogleの直接利用と比べて若干遅くなる可能性があります

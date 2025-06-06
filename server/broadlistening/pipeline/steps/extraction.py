@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from tqdm import tqdm
 
 from services.category_classification import classify_args
-from services.llm import request_to_chat_openai
+from services.llm import request_to_chat_ai
 from services.parse_json_list import parse_extraction_response
 from utils import update_progress
 
@@ -55,16 +55,19 @@ def extraction(config):
     for i in tqdm(range(0, len(comment_ids), workers)):
         batch = comment_ids[i : i + workers]
         batch_inputs = [comments.loc[id]["comment-body"] for id in batch]
-        batch_results = extract_batch(batch_inputs, prompt, model, workers, provider, config.get("local_llm_address"))
+        batch_results = extract_batch(
+            batch_inputs, prompt, model, workers, provider, config.get("local_llm_address"), config
+        )
 
         for comment_id, extracted_args in zip(batch, batch_results, strict=False):
             for j, arg in enumerate(extracted_args):
                 if arg not in argument_map:
                     # argumentテーブルに追加
                     arg_id = f"A{comment_id}_{j}"
+                    argument = arg
                     argument_map[arg] = {
                         "arg-id": arg_id,
-                        "argument": arg,
+                        "argument": argument,
                     }
                 else:
                     arg_id = argument_map[arg]["arg-id"]
@@ -97,7 +100,7 @@ def extraction(config):
 logging.basicConfig(level=logging.ERROR)
 
 
-def extract_batch(batch, prompt, model, workers, provider="openai", local_llm_address=None):
+def extract_batch(batch, prompt, model, workers, provider="openai", local_llm_address=None, config=None):
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         futures_with_index = [
             (i, executor.submit(extract_arguments, input, prompt, model, provider, local_llm_address))
@@ -106,6 +109,9 @@ def extract_batch(batch, prompt, model, workers, provider="openai", local_llm_ad
 
         done, not_done = concurrent.futures.wait([f for _, f in futures_with_index], timeout=30)
         results = [[] for _ in range(len(batch))]
+        total_token_input = 0
+        total_token_output = 0
+        total_token_usage = 0
 
         for _, future in futures_with_index:
             if future in not_done and not future.cancelled():
@@ -115,10 +121,26 @@ def extract_batch(batch, prompt, model, workers, provider="openai", local_llm_ad
             if future in done:
                 try:
                     result = future.result()
-                    results[i] = result
+                    if isinstance(result, tuple) and len(result) == 4:
+                        items, token_input, token_output, token_total = result
+                        results[i] = items
+                        total_token_input += token_input
+                        total_token_output += token_output
+                        total_token_usage += token_total
+                    else:
+                        results[i] = result
                 except Exception as e:
                     logging.error(f"Task {future} failed with error: {e}")
                     results[i] = []
+
+        if config is not None:
+            config["total_token_usage"] = config.get("total_token_usage", 0) + total_token_usage
+            config["token_usage_input"] = config.get("token_usage_input", 0) + total_token_input
+            config["token_usage_output"] = config.get("token_usage_output", 0) + total_token_output
+            print(
+                f"Extraction batch: input={total_token_input}, output={total_token_output}, total={total_token_usage} tokens"
+            )
+
         return results
 
 
@@ -128,7 +150,7 @@ def extract_arguments(input, prompt, model, provider="openai", local_llm_address
         {"role": "user", "content": input},
     ]
     try:
-        response = request_to_chat_openai(
+        response, token_input, token_output, token_total = request_to_chat_ai(
             messages=messages,
             model=model,
             is_json=False,
@@ -137,8 +159,8 @@ def extract_arguments(input, prompt, model, provider="openai", local_llm_address
             local_llm_address=local_llm_address,
         )
         items = parse_extraction_response(response)
-        items = filter(None, items)  # omit empty strings
-        return items
+        items = list(filter(None, items))  # omit empty strings
+        return items, token_input, token_output, token_total
     except json.decoder.JSONDecodeError as e:
         print("JSON error:", e)
         print("Input was:", input)

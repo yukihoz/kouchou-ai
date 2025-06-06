@@ -1,5 +1,7 @@
 # 広聴 AI / kouchou-ai
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/digitaldemocracy2030/kouchou-ai)
+
 デジタル民主主義 2030 プロジェクトにおいて、ブロードリスニングを実現するためのソフトウェア「広聴 AI」のリポジトリです。
 
 このプロジェクトは、[AI Objectives Institute](https://www.aiobjectivesinstitute.org/) が開発した [Talk to the City](https://github.com/AIObjectives/talk-to-the-city-reports)を参考に、日本の自治体や政治家の実務に合わせた機能改善を進めています。

@@ -6,7 +6,7 @@ import re
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from services.llm import request_to_chat_openai
+from services.llm import request_to_chat_ai
 
 
 class OverviewResponse(BaseModel):
@@ -36,7 +36,7 @@ def hierarchical_overview(config):
         input_text += descriptions[i] + "\n\n"
 
     messages = [{"role": "system", "content": prompt}, {"role": "user", "content": input_text}]
-    response = request_to_chat_openai(
+    response_text, token_input, token_output, token_total = request_to_chat_ai(
         messages=messages,
         model=model,
         provider=config["provider"],
@@ -44,12 +44,18 @@ def hierarchical_overview(config):
         json_schema=OverviewResponse,
     )
 
+    # トークン使用量を累積
+    config["total_token_usage"] = config.get("total_token_usage", 0) + token_total
+    config["token_usage_input"] = config.get("token_usage_input", 0) + token_input
+    config["token_usage_output"] = config.get("token_usage_output", 0) + token_output
+    print(f"Hierarchical overview: input={token_input}, output={token_output}, total={token_total} tokens")
+
     try:
         # structured outputとしてパースできるなら処理する
-        if isinstance(response, dict):
-            parsed_response = response
+        if isinstance(response_text, dict):
+            parsed_response = response_text
         else:
-            parsed_response = json.loads(response)
+            parsed_response = json.loads(response_text)
 
         with open(path, "w") as file:
             file.write(parsed_response["summary"])
@@ -59,7 +65,7 @@ def hierarchical_overview(config):
         thinking_removed = re.sub(
             r"<think\b[^>]*>.*?</think>",
             "",
-            response,
+            response_text,
             flags=re.DOTALL,
         )
 

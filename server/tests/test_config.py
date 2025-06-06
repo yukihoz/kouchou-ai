@@ -22,3 +22,4 @@ class TestSettings(Settings):
 
     class Config:
         env_file = None
+        validate_default = False  # デフォルト値の検証をスキップ

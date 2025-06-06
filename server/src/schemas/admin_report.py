@@ -36,12 +36,8 @@ class ReportInput(SchemaBaseModel):
     provider: str = "openai"  # LLMプロバイダー（openai, azure, openrouter, local）
     local_llm_address: str | None = None  # LocalLLM用アドレス（例: "127.0.0.1:1234"）
 
-
-class ReportMetadataUpdate(SchemaBaseModel):
-    """レポートのメタデータ更新用スキーマ"""
-
-    title: str | None = None  # レポートのタイトル
-    description: str | None = None  # レポートの調査概要
+    # NOTE: team-mirai feature
+    enable_source_link: bool = False  # ソースリンク機能を有効にするかどうか。有効にする場合はtrue
 
 
 class ReportVisibilityUpdate(SchemaBaseModel):

@@ -154,7 +154,7 @@ class AzureBlobStorageService(StorageService):
             return True
         return any(blob_path.endswith(suffix) for suffix in target_suffixes)
 
-    def upload_file(self, local_file_path: str, remote_blob_path: str, skip_if_same: bool = True) -> bool:
+    def upload_file(self, local_file_path: str, remote_blob_path: str, skip_if_same: bool = False) -> bool:
         """ファイルをストレージにアップロードする
 
         ローカルファイルをAzure Blob Storageにアップロードします。
@@ -207,7 +207,7 @@ class AzureBlobStorageService(StorageService):
         local_dir_path: str,
         remote_dir_prefix: str,
         target_suffixes: tuple[str, ...] = (),
-        skip_if_same: bool = True,
+        skip_if_same: bool = False,
     ) -> bool:
         """ディレクトリをストレージにアップロードする
 

@@ -6,7 +6,7 @@ from typing import TypedDict
 import pandas as pd
 from pydantic import BaseModel, Field
 
-from services.llm import request_to_chat_openai
+from services.llm import request_to_chat_ai
 
 
 class LabellingResult(TypedDict):
@@ -41,6 +41,9 @@ def hierarchical_initial_labelling(config: dict) -> None:
     model = config["hierarchical_initial_labelling"]["model"]
     workers = config["hierarchical_initial_labelling"]["workers"]
 
+    # トークン使用量を追跡するための変数を初期化
+    config["total_token_usage"] = config.get("total_token_usage", 0)
+
     initial_label_df = initial_labelling(
         initial_labelling_prompt,
         clusters_argument_df,
@@ -49,6 +52,7 @@ def hierarchical_initial_labelling(config: dict) -> None:
         workers,
         config["provider"],
         config.get("local_llm_address"),
+        config,  # configを渡して、トークン使用量を累積できるようにする
     )
     print("start initial labelling")
     initial_clusters_argument_df = clusters_argument_df.merge(
@@ -73,7 +77,8 @@ def initial_labelling(
     model: str,
     workers: int,
     provider: str = "openai",
-    local_llm_address: str = None,
+    local_llm_address: str | None = None,
+    config: dict | None = None,  # configを追加
 ) -> pd.DataFrame:
     """各クラスタに対して初期ラベリングを実行する
 
@@ -83,6 +88,9 @@ def initial_labelling(
         sampling_num: 各クラスタからサンプリングする意見の数
         model: 使用するLLMモデル名
         workers: 並列処理のワーカー数
+        provider: LLMプロバイダー
+        local_llm_address: ローカルLLMのアドレス
+        config: 設定情報を含む辞書（トークン使用量の累積に使用）
 
     Returns:
         各クラスタのラベリング結果を含むDataFrame
@@ -99,6 +107,7 @@ def initial_labelling(
         model=model,
         provider=provider,
         local_llm_address=local_llm_address,
+        config=config,  # configを渡す
     )
     with ThreadPoolExecutor(max_workers=workers) as executor:
         results = list(executor.map(process_func, cluster_ids))
@@ -120,7 +129,8 @@ def process_initial_labelling(
     target_column: str,
     model: str,
     provider: str = "openai",
-    local_llm_address: str = None,
+    local_llm_address: str | None = None,
+    config: dict | None = None,  # configを追加
 ) -> LabellingResult:
     """個別のクラスタに対してラベリングを実行する
 
@@ -131,6 +141,9 @@ def process_initial_labelling(
         sampling_num: サンプリングする意見の数
         target_column: クラスタIDが格納されている列名
         model: 使用するLLMモデル名
+        provider: LLMプロバイダー
+        local_llm_address: ローカルLLMのアドレス
+        config: 設定情報を含む辞書（トークン使用量の累積に使用）
 
     Returns:
         クラスタのラベリング結果
@@ -144,14 +157,21 @@ def process_initial_labelling(
         {"role": "user", "content": input},
     ]
     try:
-        response = request_to_chat_openai(
+        response_text, token_input, token_output, token_total = request_to_chat_ai(
             messages=messages,
             model=model,
             provider=provider,
             json_schema=LabellingFromat,
             local_llm_address=local_llm_address,
         )
-        response_json = json.loads(response) if isinstance(response, str) else response
+
+        # トークン使用量を累積（configが渡されている場合）
+        if config is not None:
+            config["total_token_usage"] = config.get("total_token_usage", 0) + token_total
+            config["token_usage_input"] = config.get("token_usage_input", 0) + token_input
+            config["token_usage_output"] = config.get("token_usage_output", 0) + token_output
+
+        response_json = json.loads(response_text) if isinstance(response_text, str) else response_text
         return LabellingResult(
             cluster_id=cluster_id,
             label=response_json.get("label", "エラーでラベル名が取得できませんでした"),

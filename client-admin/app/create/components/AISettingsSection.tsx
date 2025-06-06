@@ -9,12 +9,14 @@ export function AISettingsSection({
   model,
   workers,
   isPubcomMode,
+  enableSourceLink,
   onProviderChange,
   onModelChange,
   onWorkersChange,
   onIncreaseWorkers,
   onDecreaseWorkers,
   onPubcomModeChange,
+  onEnableSourceLinkChange,
   getModelDescription,
   getProviderDescription,
   getCurrentModels,
@@ -31,12 +33,14 @@ export function AISettingsSection({
   model: string;
   workers: number;
   isPubcomMode: boolean;
+  enableSourceLink: boolean;
   onProviderChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onModelChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onWorkersChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onIncreaseWorkers: () => void;
   onDecreaseWorkers: () => void;
   onPubcomModeChange: (checked: boolean | "indeterminate") => void;
+  onEnableSourceLinkChange: (checked: boolean | "indeterminate") => void;
   getModelDescription: () => string;
   getProviderDescription: () => string;
   getCurrentModels: () => { value: string; label: string }[];
@@ -83,9 +87,7 @@ export function AISettingsSection({
           <NativeSelect.Field value={provider} onChange={onProviderChange}>
             <option value={"openai"}>OpenAI</option>
             <option value={"azure"}>Azure</option>
-            <option value={"openrouter"} disabled>
-              OpenRouter (将来対応予定)
-            </option>
+            <option value={"openrouter"}>OpenRouter</option>
             <option value={"local"}>LocalLLM</option>
           </NativeSelect.Field>
           <NativeSelect.Indicator />
@@ -171,6 +173,22 @@ export function AISettingsSection({
               ※ LocalLLMプロバイダーを選択している場合、この設定は強制的にONになります
             </span>
           )}
+        </Field.HelperText>
+      </Field.Root>
+
+      <Field.Root>
+        <Checkbox
+          checked={enableSourceLink}
+          onCheckedChange={(details) => {
+            const { checked } = details;
+            if (checked === "indeterminate") return;
+            onEnableSourceLinkChange(checked);
+          }}
+        >
+          ソースリンク機能を有効にする
+        </Checkbox>
+        <Field.HelperText>
+         ONにした場合は、CSVのurlカラムの情報を使って、レポートの散布図上でデータ点をクリックすると元のソースにアクセスできます。
         </Field.HelperText>
       </Field.Root>
 

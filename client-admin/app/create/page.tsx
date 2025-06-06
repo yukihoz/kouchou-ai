@@ -62,6 +62,7 @@ export default function Page() {
       spreadsheetImported: inputData.spreadsheetImported,
       selectedCommentColumn: inputData.selectedCommentColumn,
       csvColumns: inputData.csvColumns,
+      selectedAttributeColumns: inputData.selectedAttributeColumns,
       provider: aiSettings.provider,
       modelOptions: aiSettings.getCurrentModels(),
     });
@@ -80,12 +81,28 @@ export default function Page() {
     try {
       if (inputData.inputType === "file" && inputData.csv) {
         const parsed = await parseCsv(inputData.csv);
-        comments = parsed.map((row, index) => ({
-          id: `csv-${index + 1}`,
-          comment: (row as unknown as Record<string, unknown>)[inputData.selectedCommentColumn] as string,
-          source: null,
-          url: null,
-        }));
+        comments = parsed.map((row, index) => {
+          const rowData = row as unknown as Record<string, unknown>;
+          
+          // コメントオブジェクトの作成（基本フィールド）
+          const comment: CsvData = {
+            id: row.id || `csv-${index + 1}`,
+            comment: rowData[inputData.selectedCommentColumn] as string,
+            source: rowData.source as string || null,
+            url: rowData.url as string || null,
+          };
+
+          // 選択された属性カラムの値を直接追加（"attribute" プレフィックス付き）
+          for (const attrCol of inputData.selectedAttributeColumns) {
+            if (rowData[attrCol] !== undefined && rowData[attrCol] !== null) {
+              // 属性カラムの名前に "attribute" プレフィックスを追加
+              const attributeKey = `attribute_${attrCol}`;
+              comment[attributeKey] = rowData[attrCol] as string;
+            }
+          }
+
+          return comment;
+        });
 
         if (comments.length < clusterSettings.clusterLv2) {
           const confirmProceed = window.confirm(
@@ -99,12 +116,28 @@ export default function Page() {
           }
         }
       } else if (inputData.inputType === "spreadsheet" && inputData.spreadsheetImported) {
-        comments = inputData.spreadsheetData.map((row, index) => ({
-          id: row.id || `spreadsheet-${index + 1}`,
-          comment: (row as unknown as Record<string, unknown>)[inputData.selectedCommentColumn] as string,
-          source: row.source || null,
-          url: row.url || null,
-        }));
+        comments = inputData.spreadsheetData.map((row, index) => {
+          const rowData = row as unknown as Record<string, unknown>;
+
+          // コメントオブジェクトの作成（基本フィールド）
+          const comment: CsvData = {
+            id: row.id || `spreadsheet-${index + 1}`,
+            comment: rowData[inputData.selectedCommentColumn] as string,
+            source: row.source || null,
+            url: row.url || null,
+          };
+
+          // 選択された属性カラムの値を直接追加（"attribute" プレフィックス付き）
+          for (const attrCol of inputData.selectedAttributeColumns) {
+            if (rowData[attrCol] !== undefined && rowData[attrCol] !== null) {
+              // 属性カラムの名前に "attribute" プレフィックスを追加
+              const attributeKey = `attribute_${attrCol}`;
+              comment[attributeKey] = rowData[attrCol] as string;
+            }
+          }
+
+          return comment;
+        });
       }
     } catch (e) {
       toaster.create({
@@ -132,6 +165,7 @@ export default function Page() {
         is_pubcom: aiSettings.isPubcomMode,
         inputType: inputData.inputType,
         is_embedded_at_local: aiSettings.isEmbeddedAtLocal,
+        enable_source_link: aiSettings.enableSourceLink,
         local_llm_address: aiSettings.provider === "local" ? aiSettings.localLLMAddress : undefined,
       });
 
@@ -194,6 +228,8 @@ export default function Page() {
                   setCsvColumns={inputData.setCsvColumns}
                   selectedCommentColumn={inputData.selectedCommentColumn}
                   setSelectedCommentColumn={inputData.setSelectedCommentColumn}
+                  selectedAttributeColumns={inputData.selectedAttributeColumns}
+                  setSelectedAttributeColumns={inputData.setSelectedAttributeColumns}
                   clusterSettings={clusterSettings}
                 />
 
@@ -209,6 +245,8 @@ export default function Page() {
                   csvColumns={inputData.csvColumns}
                   selectedCommentColumn={inputData.selectedCommentColumn}
                   setSelectedCommentColumn={inputData.setSelectedCommentColumn}
+                  selectedAttributeColumns={inputData.selectedAttributeColumns}
+                  setSelectedAttributeColumns={inputData.setSelectedAttributeColumns}
                   clusterSettings={clusterSettings}
                   onImport={() => inputData.importSpreadsheet(basicInfo.input)}
                   onClearData={inputData.clearSpreadsheetData}
@@ -231,6 +269,7 @@ export default function Page() {
               model={aiSettings.model}
               workers={aiSettings.workers}
               isPubcomMode={aiSettings.isPubcomMode}
+              enableSourceLink={aiSettings.enableSourceLink}
               isEmbeddedAtLocal={aiSettings.isEmbeddedAtLocal}
               localLLMAddress={aiSettings.localLLMAddress}
               onProviderChange={aiSettings.handleProviderChange}
@@ -245,6 +284,7 @@ export default function Page() {
               onIncreaseWorkers={aiSettings.increaseWorkers}
               onDecreaseWorkers={aiSettings.decreaseWorkers}
               onPubcomModeChange={aiSettings.handlePubcomModeChange}
+              onEnableSourceLinkChange={aiSettings.handleEnableSourceLinkChange}
               onEmbeddedAtLocalChange={(checked) => {
                 if (checked === "indeterminate") return;
                 aiSettings.setIsEmbeddedAtLocal(checked);

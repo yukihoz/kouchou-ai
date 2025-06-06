@@ -8,7 +8,7 @@ import pandas as pd
 
 from src.config import settings
 from src.schemas.admin_report import ReportInput
-from src.services.report_status import add_new_report_to_status, set_status
+from src.services.report_status import add_new_report_to_status, set_status, update_token_usage
 from src.services.report_sync import ReportSyncService
 from src.utils.logger import setup_logger
 
@@ -50,6 +50,7 @@ def _build_config(report_input: ReportInput) -> dict[str, Any]:
         "hierarchical_aggregation": {
             "sampling_num": report_input.workers,
         },
+        "enable_source_link": report_input.enable_source_link,
     }
     return config
 
@@ -72,15 +73,24 @@ def save_input_file(report_input: ReportInput) -> Path:
     Returns:
         Path: 保存されたCSVファイルのパス
     """
-    comments = [
-        {
+    comments = []
+    for comment in report_input.comments:
+        # 基本フィールドの設定
+        comment_data = {
             "comment-id": comment.id,
             "comment-body": comment.comment,
             "source": comment.source,
             "url": comment.url,
         }
-        for comment in report_input.comments
-    ]
+
+        # 追加の属性フィールドを含める
+        for key, value in comment.dict(exclude={"id", "comment", "source", "url"}).items():
+            if value is not None:
+                # すでに"attribute_"プレフィックスがついているかチェック
+                comment_data[key] = value
+
+        comments.append(comment_data)
+
     input_path = settings.INPUT_DIR / f"{report_input.input}.csv"
     df = pd.DataFrame(comments)
     df.to_csv(input_path, index=False)
@@ -98,6 +108,33 @@ def _monitor_process(process: subprocess.Popen, slug: str) -> None:
     retcode = process.wait()
     if retcode == 0:
         # レポート生成成功時、ステータスを更新
+        try:
+            status_file = settings.REPORT_DIR / slug / "hierarchical_status.json"
+            if status_file.exists():
+                with open(status_file) as f:
+                    status_data = json.load(f)
+                    total_token_usage = status_data.get("total_token_usage", 0)
+                    token_usage_input = status_data.get("token_usage_input", 0)
+                    token_usage_output = status_data.get("token_usage_output", 0)
+
+                    config_file = settings.CONFIG_DIR / f"{slug}.json"
+                    provider = None
+                    model = None
+                    if config_file.exists():
+                        with open(config_file) as f:
+                            config_data = json.load(f)
+                            provider = config_data.get("provider")
+                            model = config_data.get("model")
+
+                    logger.info(
+                        f"Found token usage in status file for {slug}: total={total_token_usage}, input={token_usage_input}, output={token_usage_output}, provider={provider}, model={model}"
+                    )
+                    update_token_usage(
+                        slug, total_token_usage, token_usage_input, token_usage_output, provider or None, model or None
+                    )
+        except Exception as e:
+            logger.error(f"Error updating token usage for {slug}: {e}")
+
         set_status(slug, "ready")
 
         logger.info(f"Syncing files for {slug} to storage")
@@ -131,3 +168,27 @@ def launch_report_generation(report_input: ReportInput) -> None:
         set_status(report_input.input, "error")
         logger.error(f"Error launching report generation: {e}")
         raise e
+
+
+def execute_aggregation(slug: str) -> bool:
+    """
+    broadlistenigの集約処理のみ実行する関数
+    """
+    try:
+        config_path = settings.CONFIG_DIR / f"{slug}.json"
+        cmd = [
+            "python",
+            "hierarchical_main.py",
+            config_path,
+            "--skip-interaction",
+            "--without-html",
+            "-o",
+            "hierarchical_aggregation",
+        ]
+        execution_dir = settings.TOOL_DIR / "pipeline"
+        process = subprocess.Popen(cmd, cwd=execution_dir)
+        threading.Thread(target=_monitor_process, args=(process, slug), daemon=True).start()
+        return True
+    except Exception as e:
+        logger.error(f"Error executing aggregation: {e}")
+        return False

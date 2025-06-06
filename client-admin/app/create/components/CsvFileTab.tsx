@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { useClusterSettings } from "../hooks/useClusterSettings";
 import { parseCsv } from "../parseCsv";
 import { getBestCommentColumn } from "../utils/columnScorer";
+import { AttributeColumnsSelector } from "./AttributeColumnsSelector";
 import { ClusterSettingsSection } from "./ClusterSettingsSection";
 import { CommentColumnSelector } from "./CommentColumnSelector";
 
@@ -16,6 +17,8 @@ export function CsvFileTab({
   setCsvColumns,
   selectedCommentColumn,
   setSelectedCommentColumn,
+  selectedAttributeColumns,
+  setSelectedAttributeColumns,
   clusterSettings,
 }: {
   csv: File | null;
@@ -24,6 +27,8 @@ export function CsvFileTab({
   setCsvColumns: (columns: string[]) => void;
   selectedCommentColumn: string;
   setSelectedCommentColumn: (column: string) => void;
+  selectedAttributeColumns: string[];
+  setSelectedAttributeColumns: (columns: string[]) => void;
   clusterSettings: ReturnType<typeof useClusterSettings>;
 }) {
   return (
@@ -55,7 +60,8 @@ export function CsvFileTab({
             if (file) {
               const parsed = await parseCsv(file);
               if (parsed.length > 0) {
-                const columns = Object.keys(parsed[0]);
+                // CSVの最初の行をカラム名として使用、IDのカラムは除外
+                const columns = Object.keys(parsed[0]).filter((key) => key !== "id");
                 setCsvColumns(columns);
 
                 // 最適なカラムを自動選択
@@ -86,6 +92,13 @@ export function CsvFileTab({
           columns={csvColumns}
           selectedColumn={selectedCommentColumn}
           onColumnChange={setSelectedCommentColumn}
+        />
+
+        <AttributeColumnsSelector
+          columns={csvColumns}
+          selectedColumn={selectedCommentColumn}
+          selectedAttributes={selectedAttributeColumns}
+          onAttributeChange={setSelectedAttributeColumns}
         />
 
         <ClusterSettingsSection

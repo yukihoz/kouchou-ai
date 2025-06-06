@@ -8,18 +8,94 @@ type Props = {
   onHover?: () => void;
   level: string;
   onTreeZoom: (level: string) => void;
+  filteredArgumentIds?: string[]; // 追加: フィルター済みID
 };
 
-export function TreemapChart({ clusterList, argumentList, onHover, level, onTreeZoom }: Props) {
-  const convertedArgumentList = argumentList.map(convertArgumentToCluster);
+export function TreemapChart({ clusterList, argumentList, onHover, level, onTreeZoom, filteredArgumentIds }: Props) {
+  // フィルタリングが有効かどうかをチェック
+  const isFilteringActive = !!filteredArgumentIds;
+
+  // フィルターされていない場合は全ての引数を表示
+  const convertedArgumentList = argumentList.map((arg) => {
+    const converted = convertArgumentToCluster(arg);
+
+    // フィルターが適用されていて、フィルター結果に含まれない場合はグレーにする
+    if (filteredArgumentIds && !filteredArgumentIds.includes(arg.arg_id)) {
+      // フィルターに該当しないものは灰色表示用のプロパティを追加
+      return {
+        ...converted,
+        filtered: true, // フィルターで除外されたフラグ
+      };
+    }
+    return converted;
+  });
+
+  // フィルター適用後の各クラスタの件数を計算
+  const clusterCounts: Record<string, number> = {};
+
+  // 初期化: すべてのクラスタの件数を0にセット
+  for (const cluster of clusterList) {
+    clusterCounts[cluster.id] = 0;
+  }
+
+  // フィルター適用後の引数を使ってカウント
+  for (const arg of argumentList) {
+    // フィルターが適用されていて、引数がフィルター対象でない場合はスキップ
+    if (isFilteringActive && !filteredArgumentIds.includes(arg.arg_id)) {
+      continue;
+    }
+
+    // 各クラスタIDに対して件数を増やす
+    for (const clusterId of arg.cluster_ids) {
+      if (clusterCounts[clusterId] !== undefined) {
+        clusterCounts[clusterId]++;
+      }
+    }
+  }
+
   const list = [{ ...clusterList[0], parent: "" }, ...clusterList.slice(1), ...convertedArgumentList];
   const ids = list.map((node) => node.id);
   const labels = list.map((node) => {
     return node.id === level ? node.label.replace(/(.{50})/g, "$1<br />") : node.label.replace(/(.{15})/g, "$1<br />");
   });
   const parents = list.map((node) => node.parent);
-  const values = list.map((node) => node.value);
-  const customdata = list.map((node) => node.takeaway.replace(/(.{15})/g, "$1<br />"));
+  const values = list.map((node) => {
+    // クラスターノードの場合、フィルター後の件数を使用
+    if (clusterCounts[node.id] !== undefined) {
+      return isFilteringActive ? clusterCounts[node.id] : node.value;
+    }
+    // 引数ノードの場合、フィルター状態に基づいて値を決定
+    // @ts-ignore filtered プロパティを追加したので無視
+    return node.filtered ? 0 : 1; // フィルター対象外なら0、そうでなければ1
+  });
+  const customdata = list.map((node) => {
+    let takeaway = node.takeaway.replace(/(.{15})/g, "$1<br />");
+
+    // クラスターノードの場合、フィルター情報を追加
+    if (clusterCounts[node.id] !== undefined && isFilteringActive) {
+      const originalCount = node.value;
+      const filteredCount = clusterCounts[node.id];
+
+      if (filteredCount < originalCount) {
+        takeaway = `${takeaway}<br><br>元の件数: ${originalCount}<br>フィルター後: ${filteredCount}`;
+      }
+    }
+
+    // @ts-ignore filtered プロパティを追加したので無視
+    return node.filtered
+      ? "" // フィルター対象外はホバー表示しない
+      : takeaway;
+  });
+
+  // フィルター状態によって色を変更
+  const colors = list.map((node) => {
+    // @ts-ignore filtered プロパティを追加したので無視
+    return node.filtered ? "#cccccc" : ""; // フィルターに該当しないものはグレー、それ以外はデフォルト色
+  });
+
+  // すべてのアイテムでホバー表示を有効にする
+  // ホバーテンプレートでカスタムデータを使用するため、hoverinfo は不要になった
+
   const data: Partial<PlotData & { maxdepth: number; pathbar: { thickness: number } }> = {
     type: "treemap",
     ids: ids,
@@ -29,11 +105,26 @@ export function TreemapChart({ clusterList, argumentList, onHover, level, onTree
     customdata: customdata,
     level: level,
     branchvalues: "total",
+    marker: {
+      colors: colors,
+      line: {
+        width: 1,
+        color: "white",
+      },
+      opacity: list.map((node) => {
+        // @ts-ignore filtered プロパティを追加したので無視
+        return node.filtered ? 0.5 : 1; // フィルターに該当しないものは半透明に
+      }),
+    },
+    // フィルター対象外のノードではホバー表示を無効にする
+    hoverinfo: "text",
     hovertemplate: "%{customdata}<extra></extra>",
     hoverlabel: {
       align: "left",
     },
-    texttemplate: "%{label}<br>%{value:,}件<br>%{percentEntry:.2%}",
+    texttemplate: isFilteringActive
+      ? "%{label}<br>%{value:,}件 (フィルター後)<br>%{percentEntry:.2%}"
+      : "%{label}<br>%{value:,}件<br>%{percentEntry:.2%}",
     maxdepth: 2,
     pathbar: {
       thickness: 28,

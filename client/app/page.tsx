@@ -1,8 +1,8 @@
-import { About } from "@/components/About";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { Reporter } from "@/components/reporter/Reporter";
 import type { Meta, Report } from "@/type";
-import { Box, Card, HStack, Heading, Text, VStack } from "@chakra-ui/react";
+import { Box, Card, HStack, Heading, Image, Text, VStack } from "@chakra-ui/react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getApiBaseUrl } from "./utils/api";
@@ -54,17 +54,17 @@ export default async function Page() {
     return (
       <>
         <div className={"container"}>
-          {meta && <Header meta={meta} />}
-          <Box mx={"auto"} maxW={"900px"} mb={10}>
+          <Header />
+          <Box mx={"auto"} maxW={"1024px"} mb={10}>
+            <Box mb="12">
+              <Reporter meta={meta} />
+            </Box>
             <Heading textAlign={"left"} fontSize={"xl"} mb={8}>
               レポート一覧
             </Heading>
-            {!reports && (
-              <VStack my={10}>
-                <Text>レポートがありません</Text>
-              </VStack>
-            )}
-            {reports.length > 0 &&
+            {reports.length === 0 ? (
+              <EmptyState />
+            ) : (
               reports.map((report) => (
                 <Link key={report.slug} href={`/${report.slug}`}>
                   <Card.Root
@@ -95,11 +95,11 @@ export default async function Page() {
                     </Card.Body>
                   </Card.Root>
                 </Link>
-              ))}
+              ))
+            )}
           </Box>
-          {meta && <About meta={meta} />}
         </div>
-        {meta && <Footer meta={meta} />}
+        <Footer meta={meta} />
       </>
     );
   } catch (_e) {
@@ -112,3 +112,19 @@ export default async function Page() {
     );
   }
 }
+
+const EmptyState = () => {
+  return (
+    <VStack mt={8} mb={12} gap={0} lineHeight={2}>
+      <Text fontSize="18px" fontWeight="bold">
+        レポートが0件です
+      </Text>
+      <Text fontSize="14px" textAlign={{ md: "center" }} mt={5}>
+        レポート作成が完了し公開されると、ここに一覧が表示されます。
+        <Box as="br" display={{ base: "none", md: "block" }} />
+        レポートが公開されるまでしばらくお待ちください。
+      </Text>
+      <Image src="images/report-empty.png" mt={8} />
+    </VStack>
+  );
+};

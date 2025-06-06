@@ -112,17 +112,6 @@ hierarchical_main.py は、FastAPI のサーバーにおいてレポート作成
 **出力**: `outputs/{dataset}/hierarchical_result.json`
 `outputs/{dataset}/final_result_with_comments.csv`（CSV出力モードのみ）
 
-### 8. hierarchical_visualization
-
-**目的**: 結果の可視化レポートを生成します。
-
-**処理内容**:
-
-- 集約結果を使用してレポートを生成
-- `../report`ディレクトリにある NPM プロジェクトを実行
-
-**出力**: レポートファイル（HTML など）
-
 ## クレジット
 
 本パイプラインは、[AI Objectives Institute](https://www.aiobjectivesinstitute.org/) が開発した [Talk to the City](https://github.com/AIObjectives/talk-to-the-city-reports)を参考に開発されており、ライセンスに基づいてソースコードを一部活用し、機能追加や改善を実施しています。ここに原作者の貢献に感謝の意を表します。

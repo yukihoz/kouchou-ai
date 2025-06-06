@@ -1,9 +1,9 @@
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { path, secret } = await request.json();
+    const { tag, secret } = await request.json();
 
     // Ondemand ISR用の秘密キーの検証
     const validSecret = process.env.REVALIDATE_SECRET;
@@ -13,18 +13,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Invalid secret" }, { status: 401 });
     }
 
-    if (!path) {
-      return NextResponse.json({ message: "Path is required" }, { status: 400 });
+    if (!tag) {
+      return NextResponse.json({ message: "Tag is required" }, { status: 400 });
     }
 
-    // 指定されたパスのキャッシュを破棄
-    revalidatePath(path);
-    console.log(`Revalidated path: ${path}`);
+    // 指定されたタグのキャッシュを破棄
+    revalidateTag(tag);
+    console.log(`Revalidated tag: ${tag}`);
 
     return NextResponse.json({
       revalidated: true,
       now: Date.now(),
-      path,
+      tag,
+      method: "force",
     });
   } catch (error) {
     console.error("Revalidation error:", error);

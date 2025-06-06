@@ -21,6 +21,7 @@ const STORAGE_KEYS = {
   WORKERS: `${STORAGE_KEY_PREFIX}workers`,
   LOCAL_LLM_ADDRESS: `${STORAGE_KEY_PREFIX}local_llm_address`,
   IS_EMBEDDED_AT_LOCAL: `${STORAGE_KEY_PREFIX}is_embedded_at_local`,
+  ENABLE_SOURCE_LINK: `${STORAGE_KEY_PREFIX}enable_source_link`,
 };
 
 // LocalLLMのデフォルトアドレスを定数化
@@ -30,6 +31,13 @@ const OPENAI_MODELS: ModelOption[] = [
   { value: "gpt-4o-mini", label: "GPT-4o mini" },
   { value: "gpt-4o", label: "GPT-4o" },
   { value: "o3-mini", label: "o3-mini" },
+];
+
+// OpenRouterで利用可能なモデル
+const OPENROUTER_MODELS: ModelOption[] = [
+  { value: "openai/gpt-4o-2024-08-06", label: "GPT-4o (OpenRouter)" },
+  { value: "openai/gpt-4o-mini-2024-07-18", label: "GPT-4o mini (OpenRouter)" },
+  { value: "google/gemini-2.5-pro-preview", label: "Gemini 2.5 Pro" },
 ];
 
 /**
@@ -106,6 +114,9 @@ export function useAISettings() {
   const [isEmbeddedAtLocal, setIsEmbeddedAtLocal] = useState<boolean>(() =>
     getFromStorage<boolean>(STORAGE_KEYS.IS_EMBEDDED_AT_LOCAL, false),
   );
+  const [enableSourceLink, setEnableSourceLink] = useState<boolean>(() =>
+    getFromStorage<boolean>(STORAGE_KEYS.ENABLE_SOURCE_LINK, false),
+  );
 
   const [localLLMAddress, setLocalLLMAddress] = useState<string>(() =>
     getFromStorage<string>(STORAGE_KEYS.LOCAL_LLM_ADDRESS, DEFAULT_LOCAL_LLM_ADDRESS),
@@ -135,13 +146,15 @@ export function useAISettings() {
   }, [isEmbeddedAtLocal]);
 
   useEffect(() => {
+    saveToStorage(STORAGE_KEYS.ENABLE_SOURCE_LINK, enableSourceLink);
+  }, [enableSourceLink]);
+
+  useEffect(() => {
     if (provider === "openrouter") {
-      fetchModelsFromServer("openrouter").then((models) => {
-        setOpenRouterModels(models);
-        if (models.length > 0) {
-          setModel(models[0].value);
-        }
-      });
+      setOpenRouterModels(OPENROUTER_MODELS);
+      if (OPENROUTER_MODELS.length > 0) {
+        setModel(OPENROUTER_MODELS[0].value);
+      }
     }
 
     if (provider === "local") {
@@ -195,12 +208,12 @@ export function useAISettings() {
       description: "Azure OpenAI Serviceを使用します。Azureの設定が必要です。",
     },
     openrouter: {
-      models: openRouterModels,
-      description: "OpenRouterを使用して複数のモデルにアクセスします。（将来対応予定）",
+      models: OPENROUTER_MODELS,
+      description: "OpenRouterを使用して複数のモデルにアクセスします。",
     },
     local: {
       models: localLLMModels,
-      description: "ローカルで実行されているLLMサーバーに接続します。（将来対応予定）",
+      description: "ローカルで実行されているLLMサーバーに接続します。",
       requiresConnection: true,
     },
   };
@@ -251,6 +264,14 @@ export function useAISettings() {
   const handlePubcomModeChange = (checked: boolean | "indeterminate") => {
     if (checked === "indeterminate") return;
     setIsPubcomMode(checked);
+  };
+
+  /**
+   * ソースリンク設定変更時のハンドラー
+   */
+  const handleEnableSourceLinkChange = (checked: boolean | "indeterminate") => {
+    if (checked === "indeterminate") return;
+    setEnableSourceLink(checked);
   };
 
   /**
@@ -309,6 +330,7 @@ export function useAISettings() {
     setWorkers(30);
     setIsPubcomMode(true);
     setIsEmbeddedAtLocal(false);
+    setEnableSourceLink(false);
     setLocalLLMAddress(DEFAULT_LOCAL_LLM_ADDRESS);
     setOpenRouterModels([]);
     setLocalLLMModels([]);
@@ -318,6 +340,7 @@ export function useAISettings() {
     saveToStorage(STORAGE_KEYS.WORKERS, 30);
     saveToStorage(STORAGE_KEYS.LOCAL_LLM_ADDRESS, DEFAULT_LOCAL_LLM_ADDRESS);
     saveToStorage(STORAGE_KEYS.IS_EMBEDDED_AT_LOCAL, false);
+    saveToStorage(STORAGE_KEYS.ENABLE_SOURCE_LINK, false);
   };
 
   return {
@@ -326,6 +349,7 @@ export function useAISettings() {
     workers,
     isPubcomMode,
     isEmbeddedAtLocal,
+    enableSourceLink,
     localLLMAddress,
     handleProviderChange,
     handleModelChange,
@@ -333,6 +357,7 @@ export function useAISettings() {
     increaseWorkers,
     decreaseWorkers,
     handlePubcomModeChange,
+    handleEnableSourceLinkChange,
     setLocalLLMAddress,
     getModelDescription,
     getProviderDescription,
